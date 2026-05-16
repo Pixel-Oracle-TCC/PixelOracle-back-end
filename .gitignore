@@ -1,0 +1,14 @@
+# Python
+ml-service/.venv/
+ml-service/__pycache__/
+ml-service/**/__pycache__/
+*.pyc
+ml-service/artifacts/
+
+# Secrets
+ml-service/.env
+.env
+
+# Node (api/)
+api/node_modules/
+api/dist/
