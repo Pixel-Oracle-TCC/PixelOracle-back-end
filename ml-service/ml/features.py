@@ -1,4 +1,4 @@
-"""Engenharia de features compartilhada entre treino (train.py) e API (main.py)."""
+"""Engenharia de features compartilhada entre treino (train.py) e API."""
 
 import os
 import re
@@ -6,6 +6,8 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
 from sklearn.preprocessing import MultiLabelBinarizer
+
+from domain.risk import classify_period
 
 LABEL_SOURCE_COL = "vendas_estimadas"
 
@@ -87,14 +89,6 @@ def extract_release_year(date_str: Any) -> Optional[int]:
     return int(match.group()) if match else None
 
 
-def classify_period(year: Optional[int]) -> Optional[str]:
-    if year is None:
-        return None
-    if year < 2020:
-        return "Pré-pandêmico"
-    return "Pandêmico/Pós"
-
-
 def as_list(value: Any) -> List[str]:
     if isinstance(value, list):
         return [str(v).strip() for v in value if str(v).strip()]
@@ -140,7 +134,9 @@ def record_to_row(doc: Dict[str, Any]) -> Dict[str, Any]:
         "num_categories": len(categories),
         "num_developers": len(as_list(doc.get("developers"))),
         "num_publishers": len(as_list(doc.get("publishers"))),
-        "required_age_num": parse_required_age(doc.get("required_age_num", doc.get("required_age"))),
+        "required_age_num": parse_required_age(
+            doc.get("required_age_num", doc.get("required_age"))
+        ),
         "main_genre": genres[0] if genres else doc.get("main_genre"),
         "genres": genres,
         "categories": categories,
@@ -230,14 +226,6 @@ def build_feature_matrix(
     parts.append(pd.DataFrame(category_mat, columns=category_cols, index=df.index))
 
     return pd.concat(parts, axis=1), genre_mlb, category_mlb
-
-
-def create_risk_label(vendas: float) -> str:
-    if vendas >= 50000:
-        return "Baixo Risco (Sucesso)"
-    if vendas >= 10000:
-        return "Risco Médio"
-    return "Alto Risco"
 
 
 def prepare_inference_matrix(
