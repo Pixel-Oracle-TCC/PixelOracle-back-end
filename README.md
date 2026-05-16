@@ -12,14 +12,15 @@ Desenvolvido como parte do ecossistema **Pixel Oracle** (TCC).
 PixelOracle-API/
 ├── api/                    # API Node.js (em desenvolvimento)
 └── ml-service/             # Serviço Python (ML + FastAPI)
-    ├── .venv/              # Ambiente virtual Python (não versionar)
+    ├── domain/             # Regras de negócio (risco, período)
+    ├── application/        # Casos de uso (predição, registro do modelo)
+    ├── infrastructure/     # Artefatos joblib, JSON/MongoDB
+    ├── presentation/       # Rotas e schemas FastAPI
+    ├── ml/                 # Pipeline ML (features + treino)
     ├── artifacts/          # Modelo treinado (.pkl) — gerado pelo train.py
     ├── data/
     │   └── database_steam_br.json
-    ├── model/
-    │   ├── features.py     # Engenharia de features (treino + inferência)
-    │   └── train.py        # Pipeline de treinamento
-    ├── main.py             # API FastAPI
+    ├── main.py             # Composição / entrada FastAPI
     ├── requirements.txt
     └── .env.example
 ```
@@ -93,7 +94,7 @@ O treino lê `data/database_steam_br.json` por padrão e salva os artefatos em `
 
 ```bash
 # Com o .venv ativado, dentro de ml-service/
-python model/train.py
+python ml/train.py
 ```
 
 Saída esperada:
@@ -260,7 +261,7 @@ curl -X POST "http://127.0.0.1:8000/predict" \
 1. Instalar Python e clonar o repositório
 2. cd ml-service && python3/python -m venv .venv
 3. Ativar .venv e pip install -r requirements.txt
-4. python model/train.py
+4. python ml/train.py
 5. uvicorn main:app --reload
 6. Testar em http://127.0.0.1:8000/docs ou Postman
 ```
@@ -273,7 +274,7 @@ curl -X POST "http://127.0.0.1:8000/predict" \
 |----------|---------|
 | `python: command not found` (Mac) | Use `python3` |
 | `ModuleNotFoundError` | Ative o `.venv` e rode `pip install -r requirements.txt` |
-| API retorna **503** | Execute `python model/train.py` para gerar `artifacts/` |
+| API retorna **503** | Execute `python ml/train.py` para gerar `artifacts/` |
 | `FileNotFoundError` no JSON | Confirme `data/database_steam_br.json` |
 | Predição estranha / sempre igual | Verifique gêneros/categorias em **português** |
 | PowerShell não ativa o venv | Use `Set-ExecutionPolicy RemoteSigned` ou CMD |
