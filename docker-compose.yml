@@ -1,34 +1,58 @@
+# Pixel Oracle — ML (8000) + BFF (3000)
+# Uso: docker compose up --build
+# Pré-requisito: artefatos em ml-service/artifacts/ (rode python ml/train.py antes)
+
 services:
   ml-service:
-    build: ./ml-service
+    build:
+      context: ./ml-service
+      dockerfile: Dockerfile
     container_name: pixel-oracle-ml
     ports:
       - "8000:8000"
     volumes:
-      # Permite atualizar modelo sem rebuild (após train.py local)
       - ./ml-service/artifacts:/app/artifacts:ro
       - ./ml-service/data:/app/data:ro
+    environment:
+      DATA_SOURCE: json
+      DATA_JSON_PATH: data/database_steam_br.json
+      INCLUDE_REVIEW_FEATURES: "false"
     env_file:
-      - ./ml-service/.env
+      - path: .env
+        required: false
+      - path: ./ml-service/.env
+        required: false
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/')"]
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/')",
+        ]
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 15s
+      retries: 6
+      start_period: 20s
+    restart: unless-stopped
 
   api:
-    build: ./api
+    build:
+      context: ./api
+      dockerfile: Dockerfile
     container_name: pixel-oracle-bff
     ports:
       - "3000:3000"
     environment:
-      PORT: 3000
+      PORT: "3000"
       ML_SERVICE_URL: http://ml-service:8000
-      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.0-flash}
+    # GEMINI_* vêm só do env_file (evita sobrescrever api/.env com vazio do host)
+    env_file:
+      - path: ./api/.env
+        required: false
+      - path: .env
+        required: false
     depends_on:
       ml-service:
         condition: service_healthy
-    env_file:
-      - ./api/.env
+    restart: unless-stopped
