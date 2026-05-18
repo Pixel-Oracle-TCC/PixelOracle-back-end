@@ -55,7 +55,8 @@ REVIEW_FEATURES = [
 
 
 def include_review_features_from_env() -> bool:
-    return os.getenv("INCLUDE_REVIEW_FEATURES", "true").lower() in ("1", "true", "yes")
+    """Padrão false: predição pré-lançamento (sem reviews na API)."""
+    return os.getenv("INCLUDE_REVIEW_FEATURES", "false").lower() in ("1", "true", "yes")
 
 
 def active_numeric_features(include_review_features: bool) -> List[str]:
@@ -120,7 +121,12 @@ def record_to_row(doc: Dict[str, Any]) -> Dict[str, Any]:
     if price is None and "price_overview" in doc:
         price = parse_price_brl(doc.get("price_overview"))
 
+    titulo = doc.get("titulo") or doc.get("name")
+    descricao = doc.get("descricao") or doc.get("ideia") or doc.get("description")
+
     return {
+        "titulo": titulo,
+        "descricao": descricao,
         "app_id": doc.get("app_id"),
         "platforms": doc.get("platforms"),
         "supported_languages": doc.get("supported_languages"),
@@ -151,14 +157,32 @@ def record_to_row(doc: Dict[str, Any]) -> Dict[str, Any]:
         "trading_cards": bool(doc.get("trading_cards")),
         "workshop": bool(doc.get("workshop")),
         "is_free": bool(doc.get("is_free")),
-        "coming_soon": bool(doc.get("coming_soon")),
+        "coming_soon": bool(doc.get("coming_soon", True)),
         "adult_content": bool(doc.get("adult_content")),
-        "total_positive": doc.get("total_positive", 0),
-        "total_reviews": doc.get("total_reviews", 0),
-        "user_score": doc.get("user_score", 0.0),
-        "multiplicador_boxleiter": doc.get("multiplicador_boxleiter", 30),
         LABEL_SOURCE_COL: doc.get(LABEL_SOURCE_COL),
     }
+
+
+# Colunas usadas só no histórico de treino (rótulo) ou rejeitadas na API pré-lançamento
+POST_LAUNCH_COLUMNS = [
+    "total_positive",
+    "total_reviews",
+    "user_score",
+    "multiplicador_boxleiter",
+    "score_desc",
+]
+
+
+def strip_for_prelaunch_training(df: pd.DataFrame) -> pd.DataFrame:
+    """Remove sinais pós-lançamento; o modelo aprende só com metadados planejados."""
+    drop_cols = [
+        *POST_LAUNCH_COLUMNS,
+        "titulo",
+        "descricao",
+        "app_id",
+    ]
+    existing = [c for c in drop_cols if c in df.columns]
+    return df.drop(columns=existing, errors="ignore")
 
 
 def compute_score_desc_rare_labels(df: pd.DataFrame, min_count: int = 3) -> List[str]:
