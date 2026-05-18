@@ -1,29 +1,44 @@
-"""Schemas de entrada/saída da API (Pydantic)."""
+"""Schemas da API — pitch pré-lançamento (jogo ainda não publicado na Steam)."""
 
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
 
-class GameDataInput(BaseModel):
-    """Payload alinhado ao schema de database_steam_br.json / train.py."""
+class GamePitchInput(BaseModel):
+    """
+    Dados que o desenvolvedor informa ANTES do lançamento.
+    Não inclui reviews, notas de usuários nem vendas reais.
+    """
 
-    price_brl: float = Field(..., ge=0, description="Preço em reais (ex: 11.39)")
-    genres: List[str] = Field(..., min_length=1, description='Ex: ["Ação", "Indie"]')
-    categories: List[str] = Field(
-        ..., min_length=1, description='Ex: ["Um jogador", "Proezas Steam"]'
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
+
+    titulo: str = Field(
+        ...,
+        min_length=1,
+        max_length=200,
+        validation_alias=AliasChoices("titulo", "name"),
+        description="Título do jogo",
+    )
+    descricao: str = Field(
+        ...,
+        min_length=10,
+        max_length=4000,
+        validation_alias=AliasChoices("descricao", "ideia", "description"),
+        description="Descrição da ideia / proposta do jogo",
     )
 
-    release_year: int = Field(..., ge=1990, le=2035)
-    period_time: Optional[str] = Field(
-        None, description='Opcional. Ex: "Pandêmico/Pós" ou "Pré-pandêmico"'
-    )
+    price_brl: float = Field(..., ge=0, description="Preço planejado em reais (BRL)")
+    genres: List[str] = Field(..., min_length=1)
+    categories: List[str] = Field(..., min_length=1)
+    release_year: int = Field(..., ge=1990, le=2035, description="Ano planejado de lançamento")
+    period_time: Optional[str] = Field(None, description="Opcional; derivado do ano se omitido")
 
     platforms: int = Field(1, ge=0)
     supported_languages: int = Field(1, ge=0)
     dlc: int = Field(0, ge=0)
-    achievements: int = Field(0, ge=0)
-    metacritic: int = Field(0, ge=0)
+    achievements: int = Field(0, ge=0, description="Conquistas planejadas na página Steam")
+    metacritic: int = Field(0, ge=0, description="Use 0 — jogo ainda sem nota Metacritic")
     required_age_num: float = Field(0, ge=0)
 
     singleplayer: bool = True
@@ -34,14 +49,11 @@ class GameDataInput(BaseModel):
     trading_cards: bool = False
     workshop: bool = False
     is_free: bool = False
-    coming_soon: bool = False
+    coming_soon: bool = True
     adult_content: bool = False
 
     controller_support: str = "none"
     type: str = "game"
-    score_desc: str = "Mixed"
 
-    total_positive: int = Field(0, ge=0)
-    total_reviews: int = Field(0, ge=0)
-    user_score: float = Field(0.0, ge=0, le=100)
-    multiplicador_boxleiter: int = Field(30, ge=1)
+
+GameDataInput = GamePitchInput

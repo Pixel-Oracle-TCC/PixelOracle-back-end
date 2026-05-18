@@ -1,4 +1,4 @@
-"""Pipeline de treinamento e persistência de artefatos."""
+"""Treinamento do modelo em modo pré-lançamento (sem reviews na matriz de features)."""
 
 import os
 import sys
@@ -27,9 +27,7 @@ from ml.features import (
     active_numeric_features,
     as_list,
     build_feature_matrix,
-    compute_score_desc_rare_labels,
-    include_review_features_from_env,
-    sanitize_score_desc,
+    strip_for_prelaunch_training,
 )
 
 ARTIFACTS_DIR = ML_SERVICE_DIR / "artifacts"
@@ -39,9 +37,13 @@ load_dotenv(ML_SERVICE_DIR / ".env")
 
 def prepare_training_data(
     df: pd.DataFrame,
-) -> Tuple[pd.DataFrame, pd.Series, MultiLabelBinarizer, MultiLabelBinarizer, list]:
-    score_desc_rare = compute_score_desc_rare_labels(df)
-    df = sanitize_score_desc(df, rare_labels=score_desc_rare)
+) -> Tuple[pd.DataFrame, pd.Series, MultiLabelBinarizer, MultiLabelBinarizer]:
+    """
+    Treina como se o dev informasse apenas o planejamento (preço, gêneros, categorias…).
+    O rótulo (vendas_estimadas) vem do histórico Steam, mas reviews NÃO entram no X.
+    """
+    if LABEL_SOURCE_COL not in df.columns:
+        raise ValueError(f"Dataset precisa da coluna {LABEL_SOURCE_COL} para treino.")
 
     required = [LABEL_SOURCE_COL, "period_time", "main_genre"]
     df = df.dropna(subset=required).copy()
@@ -50,11 +52,13 @@ def prepare_training_data(
     df = df[df["genres"].apply(lambda g: len(as_list(g)) > 0)].copy()
 
     y = df[LABEL_SOURCE_COL].apply(create_risk_label)
-    include_review = include_review_features_from_env()
+
+    # Apenas metadados planejáveis antes do lançamento
+    df_features = strip_for_prelaunch_training(df)
     X, genre_mlb, category_mlb = build_feature_matrix(
-        df, fit_encoders=True, include_review_features=include_review
+        df_features, fit_encoders=True, include_review_features=False
     )
-    return X, y, genre_mlb, category_mlb, score_desc_rare
+    return X, y, genre_mlb, category_mlb
 
 
 def build_classifier() -> RandomForestClassifier:
@@ -69,26 +73,17 @@ def build_classifier() -> RandomForestClassifier:
 
 
 def train_and_save(df: pd.DataFrame) -> None:
-    print("🧹 Preparando features (todas as colunas do JSON)...")
-    X, y, genre_mlb, category_mlb, score_desc_rare = prepare_training_data(df)
-    include_review = include_review_features_from_env()
+    print("🧹 Treinamento modo PRÉ-LANÇAMENTO (sem reviews / score_desc nas features)...")
+    X, y, genre_mlb, category_mlb = prepare_training_data(df)
 
     print(f"   → Amostras: {len(X)} | Features: {X.shape[1]}")
     print(f"   → Gêneros (multi-hot): {len(genre_mlb.classes_)}")
     print(f"   → Categorias Steam (multi-hot): {len(category_mlb.classes_)}")
-
-    if include_review:
-        warnings.warn(
-            "INCLUDE_REVIEW_FEATURES=true: total_reviews e correlatos vazam informação "
-            "do alvo (vendas_estimadas = reviews × multiplicador). "
-            "Use INCLUDE_REVIEW_FEATURES=false para simular predição pré-lançamento.",
-            UserWarning,
-            stacklevel=2,
-        )
+    print("   → titulo/descricao: usados na API e no Gemini; não entram no ML")
 
     clf = build_classifier()
 
-    print("\n🔁 Validação cruzada (5-fold, amostra pequena)...")
+    print("\n🔁 Validação cruzada (5-fold)...")
     cv_scores = cross_val_score(clf, X, y, cv=5, scoring="accuracy")
     print(f"   → Acurácia CV: {cv_scores.mean():.2%} (+/- {cv_scores.std():.2%})")
 
@@ -105,8 +100,8 @@ def train_and_save(df: pd.DataFrame) -> None:
     importances = pd.Series(clf.feature_importances_, index=X.columns)
     top = importances.sort_values(ascending=False).head(15)
     print("\n🔝 Top 15 features por importância:")
-    for name, score in top.items():
-        print(f"   {score:.4f}  {name}")
+    for feat, score in top.items():
+        print(f"   {score:.4f}  {feat}")
 
     print(f"\n💾 Salvando artefatos em {ARTIFACTS_DIR}...")
     ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -116,12 +111,13 @@ def train_and_save(df: pd.DataFrame) -> None:
     joblib.dump(list(X.columns), ARTIFACTS_DIR / "feature_columns.pkl")
     joblib.dump(
         {
-            "numeric": active_numeric_features(include_review),
+            "modo": "pre-lancamento",
+            "numeric": active_numeric_features(False),
             "boolean": BOOLEAN_FEATURES,
             "categorical": CATEGORICAL_FEATURES,
-            "include_review_features": include_review,
-            "include_score_desc": include_review,
-            "score_desc_rare": score_desc_rare,
+            "include_review_features": False,
+            "include_score_desc": False,
+            "score_desc_rare": [],
         },
         ARTIFACTS_DIR / "feature_config.pkl",
     )

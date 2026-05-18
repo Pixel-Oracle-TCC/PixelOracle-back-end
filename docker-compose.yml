@@ -1,0 +1,34 @@
+services:
+  ml-service:
+    build: ./ml-service
+    container_name: pixel-oracle-ml
+    ports:
+      - "8000:8000"
+    volumes:
+      # Permite atualizar modelo sem rebuild (após train.py local)
+      - ./ml-service/artifacts:/app/artifacts:ro
+      - ./ml-service/data:/app/data:ro
+    env_file:
+      - ./ml-service/.env
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  api:
+    build: ./api
+    container_name: pixel-oracle-bff
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      ML_SERVICE_URL: http://ml-service:8000
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.0-flash}
+    depends_on:
+      ml-service:
+        condition: service_healthy
+    env_file:
+      - ./api/.env

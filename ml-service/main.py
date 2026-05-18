@@ -35,7 +35,10 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Pixel Oracle - ML API",
-    description="Predição de risco comercial para jogos Steam BR (pipeline alinhado ao treino).",
+    description=(
+        "Motor de análise que estima risco e chances de sucesso comercial "
+        "de jogos Steam BR (cenário pré-lançamento)."
+    ),
     lifespan=lifespan,
 )
 

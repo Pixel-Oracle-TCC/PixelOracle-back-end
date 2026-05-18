@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException
 
 from application.predict_risk import PredictCommercialRiskUseCase
 from application.registry import ModelNotLoadedError, ModelRegistry
-from presentation.schemas import GameDataInput
+from presentation.schemas import GamePitchInput
 
 
 def create_router(registry: ModelRegistry) -> APIRouter:
@@ -19,7 +19,7 @@ def create_router(registry: ModelRegistry) -> APIRouter:
             raise HTTPException(status_code=503, detail=exc.detail) from exc
 
     @router.post("/predict")
-    def predict_success(game: GameDataInput):
+    def predict_success(game: GamePitchInput):
         try:
             return predict_use_case.execute(game.model_dump())
         except ModelNotLoadedError as exc:
