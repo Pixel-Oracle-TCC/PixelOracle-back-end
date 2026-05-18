@@ -66,22 +66,25 @@ pixel-oracle/   (PixelOracle-API)
 
 ## Início rápido (Docker)
 
+Para outros desenvolvedores: guia completo em **[DOCKER.md](DOCKER.md)**.
+
 ```bash
-# 1. Treine o modelo localmente (gera artifacts/)
+# 1. Treinar modelo (obrigatório — artifacts/ não está no Git)
 cd ml-service && python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt && python ml/train.py
 
-# 2. Na raiz do monorepo
-cp api/.env.example api/.env
-# Defina GEMINI_API_KEY no api/.env (opcional)
+# 2. Na raiz do repositório
+cp .env.example .env    # GEMINI_API_KEY opcional
 
+# 3. Subir tudo
 docker compose up --build
+# ou: ./scripts/docker-up.sh
 ```
 
 | URL | Serviço |
 |-----|---------|
 | http://localhost:3000/api/health | BFF |
-| http://localhost:3000/api/report | Relatório completo |
+| http://localhost:3000/api/report | Relatório (POST) |
 | http://localhost:8000/docs | ML Swagger |
 
 ---
