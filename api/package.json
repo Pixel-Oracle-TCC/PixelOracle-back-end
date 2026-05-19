@@ -1,14 +1,14 @@
 {
   "name": "pixel-oracle-api",
   "version": "1.0.0",
-  "description": "BFF Node.js — Pixel Oracle (ML + Gemini)",
+  "description": "API principal Node.js — Pixel Oracle (ML + Gemini)",
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js"
   },
-  "keywords": ["pixel-oracle", "bff", "steam"],
+  "keywords": ["pixel-oracle", "api", "steam"],
   "license": "MIT",
   "dependencies": {
     "@google/generative-ai": "^0.24.0",

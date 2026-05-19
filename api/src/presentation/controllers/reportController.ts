@@ -13,7 +13,7 @@ export function createReportController(
         const ml = await mlService.health();
         res.json({
           status: "online",
-          bff: "pixel-oracle-api",
+          api: "pixel-oracle-api",
           modo: "pre-lancamento",
           ml_service: ml,
         });

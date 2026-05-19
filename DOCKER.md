@@ -1,6 +1,6 @@
 # Docker — Pixel Oracle
 
-Guia para outros desenvolvedores subirem **ML** (`:8000`) e **BFF** (`:3000`) com um comando.
+Guia para outros desenvolvedores subirem **ML** (`:8000`) e a **API principal** (`:3000`) com um comando.
 
 ## Pré-requisitos
 
@@ -55,7 +55,7 @@ chmod +x scripts/docker-up.sh
 | URL | Serviço |
 |-----|---------|
 | http://localhost:8000/docs | ML (Swagger) |
-| http://localhost:3000/api/health | BFF |
+| http://localhost:3000/api/health | API principal |
 | http://localhost:3000/api/report | Relatório completo (POST) |
 
 Exemplo Postman: `POST http://localhost:3000/api/report` com body do README (campos `titulo`, `descricao`, etc.).
@@ -82,17 +82,17 @@ docker compose up
 ```text
 docker compose
 ├── ml-service  →  :8000  (FastAPI + modelo)
-└── api         →  :3000  (BFF → chama ml-service na rede interna)
+└── api         →  :3000  (API principal → chama ml-service na rede interna)
 ```
 
-O BFF usa `ML_SERVICE_URL=http://ml-service:8000` **dentro** da rede Docker (não use `localhost` no container da API).
+A API principal usa `ML_SERVICE_URL=http://ml-service:8000` **dentro** da rede Docker (não use `localhost` no container da API).
 
 ## Problemas comuns
 
 | Problema | Solução |
 |----------|---------|
 | ML unhealthy / 503 | Rode `python ml/train.py` e confira `artifacts/` |
-| BFF não sobe | `docker compose logs api` — espere o ML ficar healthy |
+| API principal não sobe | `docker compose logs api` — espere o ML ficar healthy |
 | Gemini não responde | Coloque `GEMINI_API_KEY` no `.env` da raiz e `docker compose up` de novo |
 | Porta em uso | Pare processos locais em 3000/8000 ou altere ports no `docker-compose.yml` |
 

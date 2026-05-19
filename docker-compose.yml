@@ -1,4 +1,4 @@
-# Pixel Oracle — ML (8000) + BFF (3000)
+# Pixel Oracle — ML (8000) + API principal (3000)
 # Uso: docker compose up --build
 # Pré-requisito: artefatos em ml-service/artifacts/ (rode python ml/train.py antes)
 
@@ -40,7 +40,7 @@ services:
     build:
       context: ./api
       dockerfile: Dockerfile
-    container_name: pixel-oracle-bff
+    container_name: pixel-oracle-api
     ports:
       - "3000:3000"
     environment:

@@ -36,7 +36,7 @@ app.use("/api", createRoutes(generateFullReport, mlService));
 app.use(errorHandler);
 
 app.listen(PORT, () => {
-  console.log(`🚀 Pixel Oracle BFF — análise de risco e chances de sucesso`);
+  console.log(`🚀 Pixel Oracle — API principal (análise de risco e chances de sucesso)`);
   console.log(`   http://localhost:${PORT}`);
   console.log(`   ML: ${ML_SERVICE_URL}`);
   console.log(`   Rotas: GET /api/health | POST /api/predict | POST /api/report`);
