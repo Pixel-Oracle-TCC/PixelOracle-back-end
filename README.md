@@ -1,97 +1,113 @@
-# Pixel Oracle (Monorepo)
+# Pixel Oracle API
 
-**Pixel Oracle** auxilia o **desenvolvimento de jogos indie** e ajuda o desenvolvedor a **analisar riscos e chances de sucesso** antes do lançamento na Steam — com base em dados do mercado brasileiro, Machine Learning e orientação por IA.
+Monorepo do **Pixel Oracle** (TCC): apoia o desenvolvedor indie a estimar **risco comercial** e **chances de sucesso** **antes do lançamento** na Steam, com dados do mercado brasileiro.
 
-Desenvolvido como parte do **TCC — Pixel Oracle**.
+| Camada | Função |
+|--------|--------|
+| **ml-service** (Python) | Random Forest sobre metadados planejados (preço, gêneros, categorias, etc.) |
+| **api** (API principal, Node.js) | Expõe REST para o frontend; chama o ML e o **Google Gemini** (resumo + dicas) |
+| **Frontend** | Repositório separado (`Pixel-Oracle-FrontEnd`) — consome só a API principal |
 
----
-
-## Visão do produto
-
-| Pergunta do desenvolvedor | Como o Pixel Oracle responde |
-|---------------------------|------------------------------|
-| “Qual o risco do meu jogo flopped?” | Classificação ML: **Alto Risco**, **Risco Médio** ou **Baixo Risco (Sucesso)** + probabilidades |
-| “O que posso melhorar antes de lançar?” | Dicas do **Gemini** sobre pitch, preço, página Steam, escopo e visibilidade |
-| “Meu jogo ainda não existe na Steam” | Modo **pré-lançamento**: nome, descrição da ideia e metadados planejados (sem reviews) |
-
-O fluxo não substitui o trabalho do dev — **apoia a decisão** com dados e sugestões práticas para aumentar as chances de sucesso comercial.
+**Modo atual:** pré-lançamento — o dev informa **título**, **descrição da ideia** e o que planeja na página da Steam. **Não** envia reviews (jogo ainda não existe na loja).
 
 ---
 
-## Arquitetura
+## Início rápido
 
 ```text
-Frontend (Angular, repo separado)  →  api/ BFF :3000  →  ml-service/ :8000
-                                              ↘ Gemini (dicas comerciais)
-```
-
-| Serviço | Stack | Porta | Função |
-|---------|-------|-------|--------|
-| **ml-service** | Python, FastAPI, scikit-learn | 8000 | Predição ML (uso interno / BFF) |
-| **api** | Node.js, Express, Gemini | 3000 | BFF — **única API que o frontend consome** |
-
-> O frontend Angular fica em **outro repositório** (ex.: `Pixel-Oracle-FrontEnd`). Este monorepo expõe apenas `ml-service` + `api`.
-
----
-
-## Estrutura do repositório
-
-```
-pixel-oracle/   (PixelOracle-API)
-├── ml-service/                 # Python — Clean Architecture
-│   ├── domain/
-│   ├── application/
-│   ├── infrastructure/
-│   ├── presentation/
-│   ├── ml/                     # features.py + train.py
-│   ├── artifacts/
-│   ├── data/
-│   ├── main.py
-│   └── Dockerfile
-├── api/                        # Node.js BFF — Clean Architecture
-│   ├── src/
-│   │   ├── domain/
-│   │   ├── application/
-│   │   ├── infrastructure/
-│   │   ├── services/           # mlService + geminiService
-│   │   ├── presentation/
-│   │   └── index.ts
-│   ├── package.json
-│   └── Dockerfile
-├── docker-compose.yml
-└── .gitignore
+1. Treinar modelo (uma vez)     →  python ml/train.py
+2. Configurar api/.env          →  GEMINI_API_KEY (opcional)
+3. Subir serviços               →  Docker OU dois terminais (ML + API principal)
+4. Testar                       →  POST http://localhost:3000/api/report
 ```
 
 ---
 
-## Início rápido (Docker)
+## Sumário
 
-Para outros desenvolvedores: guia completo em **[DOCKER.md](DOCKER.md)**.
+1. [Arquitetura e portas](#arquitetura-e-portas)
+2. [Pré-requisitos e instalação](#pré-requisitos-e-instalação)
+3. [Como rodar](#como-rodar)
+4. [Treinar o modelo](#treinar-o-modelo)
+5. [Rotas da API](#rotas-da-api)
+6. [Corpo da requisição](#corpo-da-requisição)
+7. [Postman](#postman)
+8. [Variáveis de ambiente](#variáveis-de-ambiente)
+9. [Erros comuns](#erros-comuns)
+10. [Docker](#docker)
+11. [Repositórios relacionados](#repositórios-relacionados)
+
+---
+
+## Arquitetura e portas
+
+```text
+  Frontend (Angular)     api/ :3000          ml-service/ :8000
+        │                    │                      │
+        │    POST /api/report│   POST /predict      │
+        │                    ├──────────────────────┘
+        │                    │  http://ml-service:8000  (rede Docker)
+        │                    └──────────► Gemini API (dicas)
+        └──────────────────────► só use a API principal em produção/dev front
+```
+
+| URL base | Serviço | Uso |
+|----------|---------|-----|
+| `http://localhost:3000/api` | **API principal** | **Use sempre no Postman e no frontend** |
+| `http://localhost:8000` | ML | Debug / Swagger; o front **não** chama direto |
+
+---
+
+## Pré-requisitos e instalação
+
+### Ferramentas
+
+| Ferramenta | Versão | Obrigatório |
+|------------|--------|-------------|
+| Python | 3.9+ | Sim (treino + ML local) |
+| Node.js | 18+ | Sim (API principal local) |
+| npm | vem com Node | Sim |
+| Docker Desktop | recente | Recomendado para o time |
+| Git | — | Clone do repo |
+
+No Mac use `python3`. No Windows, marque **Add Python to PATH** na instalação.
+
+### 1. Clone e entre na pasta
 
 ```bash
-# 1. Treinar modelo (obrigatório — artifacts/ não está no Git)
-cd ml-service && python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt && python ml/train.py
-
-# 2. Na raiz do repositório
-cp .env.example .env    # GEMINI_API_KEY opcional
-
-# 3. Subir tudo
-docker compose up --build
-# ou: ./scripts/docker-up.sh
+cd PixelOracle-API
 ```
 
-| URL | Serviço |
-|-----|---------|
-| http://localhost:3000/api/health | BFF |
-| http://localhost:3000/api/report | Relatório (POST) |
-| http://localhost:8000/docs | ML Swagger |
+### 2. Ambiente Python + dependências (ml-service)
 
----
+**macOS / Linux:**
 
-## BFF Node.js (`api/`)
+```bash
+cd ml-service
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
 
-### Instalação (Mac / Windows)
+**Windows (PowerShell):**
+
+```powershell
+cd ml-service
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+```
+
+### 3. Treinar o modelo (obrigatório na primeira vez)
+
+```bash
+# Com .venv ativado, dentro de ml-service/
+python ml/train.py
+```
+
+Deve existir `ml-service/artifacts/modelo_rf.pkl`. A pasta `artifacts/` **não está no Git**.
+
+### 4. Ambiente Node (api)
 
 ```bash
 cd api
@@ -99,327 +115,302 @@ npm install
 cp .env.example .env
 ```
 
-| Variável | Padrão | Descrição |
-|----------|--------|-----------|
-| `PORT` | `3000` | Porta do BFF |
-| `ML_SERVICE_URL` | `http://localhost:8000` | URL do Python |
-| `GEMINI_API_KEY` | — | Chave Google AI (opcional) |
-| `GEMINI_MODEL` | `gemini-2.0-flash` | Modelo Gemini |
+Edite `api/.env` e coloque sua `GEMINI_API_KEY` (opcional; sem chave, `/api/report` usa dicas fallback).
 
-### Rodar em desenvolvimento
+---
 
-Terminal 1 — ML:
+## Como rodar
+
+Escolha **uma** opção. Não rode Docker e `npm run dev`/`uvicorn` ao mesmo tempo nas mesmas portas.
+
+### Opção A — Docker (time / demonstração)
+
+Na **raiz** do repositório:
 
 ```bash
-cd ml-service && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+docker compose up --build -d
+docker compose ps    # pixel-oracle-ml e pixel-oracle-api → healthy
+```
+
+Detalhes: **[DOCKER.md](DOCKER.md)**. Gemini: use **`api/.env`** com a chave (não deixe `GEMINI_API_KEY` vazio no `.env` da raiz).
+
+### Opção B — Local (desenvolvimento)
+
+**Terminal 1 — ML (porta 8000):**
+
+```bash
+cd ml-service
+source .venv/bin/activate
 uvicorn main:app --reload --port 8000
 ```
 
-Terminal 2 — BFF:
+Aguarde: `✅ Modelo pronto` e `Uvicorn running on http://0.0.0.0:8000`.
+
+**Terminal 2 — API principal (porta 3000):**
 
 ```bash
-cd api && npm run dev
+cd api
+npm run dev
 ```
 
-### `POST /api/report` (fluxo completo)
+Aguarde: `🚀 Pixel Oracle — API principal` **sem** o aviso `GEMINI_API_KEY não definida` (se a chave estiver no `.env`).
 
-1. BFF recebe dados do jogo  
-2. Chama `ml-service` → risco + probabilidades  
-3. Monta prompt e chama **Gemini** → 3 dicas práticas  
-4. Retorna JSON unificado  
-
-Sem `GEMINI_API_KEY`, o BFF usa dicas **fallback** estáticas.
-
-Estrutura interna do BFF (`api/src/`):
-
-```
-domain/          → entidades e portas (contratos)
-application/     → GenerateFullReportUseCase
-services/        → mlService (Axios) e geminiService
-infrastructure/  → prompts Gemini
-presentation/    → rotas e controllers Express
-index.ts         → composição
-```
-
-#### Rotas do BFF (Postman)
-
-| Método | URL | Descrição |
-|--------|-----|-----------|
-| GET | `http://127.0.0.1:3000/api/health` | Status BFF + ML |
-| POST | `http://127.0.0.1:3000/api/predict` | Proxy para ML `/predict` |
-| POST | `http://127.0.0.1:3000/api/report` | ML + dicas (Gemini ou fallback) |
+**Teste rápido:**
 
 ```bash
-curl -X POST http://127.0.0.1:3000/api/report \
-  -H "Content-Type: application/json" \
-  -d '{"titulo":"Meu Jogo Indie","descricao":"Roguelike 2D com combate rápido e progressão permanente.","price_brl":24.99,"genres":["Ação","Indie"],"categories":["Um jogador","Proezas Steam"],"release_year":2025}'
+curl http://127.0.0.1:3000/api/health
 ```
-
----
-
-## Pré-requisitos
-
-| Ferramenta | Versão mínima |
-|------------|----------------|
-| Python | 3.9+ |
-| Node.js | 18+ |
-| npm | incluso com Node |
-| Docker | opcional (compose) |
-| Git | opcional |
-
-No **Mac**, use `python3` (o comando `python` pode não existir).  
-No **Windows**, marque **"Add Python to PATH"** na instalação.
-
----
-
-## Instalação
-
-### macOS
-
-```bash
-# 1. Entre na pasta do serviço ML
-cd PixelOracle-API/ml-service
-
-# 2. Crie o ambiente virtual
-python3 -m venv .venv
-
-# 3. Ative o ambiente
-source .venv/bin/activate
-
-# 4. Instale as dependências
-pip install -r requirements.txt
-
-# 5. (Opcional) Configure variáveis de ambiente
-cp .env.example .env
-```
-
-### Windows (PowerShell ou CMD)
-
-```powershell
-# 1. Entre na pasta do serviço ML
-cd PixelOracle-API\ml-service
-
-# 2. Crie o ambiente virtual
-python -m venv .venv
-
-# 3. Ative o ambiente
-# PowerShell:
-.venv\Scripts\Activate.ps1
-# CMD:
-# .venv\Scripts\activate.bat
-
-# 4. Instale as dependências
-pip install -r requirements.txt
-
-# 5. (Opcional) Configure variáveis de ambiente
-copy .env.example .env
-```
-
-> **Windows — erro de execução de scripts:** se o PowerShell bloquear a ativação, execute uma vez como administrador:
-> `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`
 
 ---
 
 ## Treinar o modelo
 
-O treino lê `data/database_steam_br.json` por padrão e salva os artefatos em `artifacts/`.
+| Item | Valor |
+|------|--------|
+| Dataset padrão | `ml-service/data/database_steam_br.json` (~110 jogos BR) |
+| Features no treino | Metadados planejáveis (sem reviews) |
+| Saída | `ml-service/artifacts/*.pkl` |
 
 ```bash
-# Com o .venv ativado, dentro de ml-service/
+cd ml-service && source .venv/bin/activate
 python ml/train.py
 ```
 
-Saída esperada:
+| Variável (`ml-service/.env`, opcional) | Padrão |
+|---------------------------------------|--------|
+| `DATA_SOURCE` | `json` |
+| `INCLUDE_REVIEW_FEATURES` | `false` (manter para pré-lançamento) |
 
-- Validação cruzada (5-fold)
-- Classification report no conjunto de teste
-- Arquivos em `artifacts/`:
-  - `modelo_rf.pkl`
-  - `mlb_genres.pkl` / `mlb_categories.pkl`
-  - `feature_columns.pkl` / `feature_config.pkl`
-
-### Variáveis de ambiente (`.env`)
-
-| Variável | Padrão | Descrição |
-|----------|--------|-----------|
-| `DATA_SOURCE` | `json` | `json` ou `mongo` |
-| `DATA_JSON_PATH` | `data/database_steam_br.json` | Caminho do dataset |
-| `INCLUDE_REVIEW_FEATURES` | `false` | `true` só para experimentos com reviews no treino |
-| `MONGO_URI` | — | Só se `DATA_SOURCE=mongo` |
-
-Copie `.env.example` para `.env` e ajuste se necessário.
+Para atualizar o modelo: substitua o JSON (repo **PixelOracle-data-base**) e rode `python ml/train.py` de novo.
 
 ---
 
-## Subir a API
+## Rotas da API
+
+Todas as rotas da API principal têm prefixo **`/api`**. Base: `http://127.0.0.1:3000` ou `http://localhost:3000`.
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| **GET** | `/api/health` | API principal + ML no ar? |
+| **POST** | `/api/predict` | Só classificação ML |
+| **POST** | `/api/report` | **Principal:** ML + Gemini (resumo + dicas) |
+
+### `GET /api/health`
+
+Sem body.
 
 ```bash
-# Dentro de ml-service/, com .venv ativado
-uvicorn main:app --reload
+curl http://127.0.0.1:3000/api/health
 ```
 
-| URL | Descrição |
-|-----|-----------|
-| http://127.0.0.1:8000/ | Health check |
-| http://127.0.0.1:8000/docs | Swagger (testar no navegador) |
-| http://127.0.0.1:8000/predict | Predição de risco (POST) |
+### `POST /api/predict`
 
-Para expor na rede local:
+Mesmo body da seção [Corpo da requisição](#corpo-da-requisição). Retorna só `predicao_ml` (sem Gemini).
 
-```bash
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
-```
+### `POST /api/report` (recomendado)
 
----
+Mesmo body. Retorna `predicao_ml` + `insights` (`fonte`: `"gemini"` ou `"fallback"`).
 
-## Como usar a API (modo pré-lançamento)
-
-O desenvolvedor informa **nome**, **descrição da ideia** e metadados planejados da Steam.  
-**Não envie reviews** (`total_reviews`, `user_score`, etc.) — o jogo ainda não foi lançado.
-
-### Campos obrigatórios
-
-| Campo | Tipo | Descrição |
-|-------|------|-----------|
-| `titulo` | string | Título do jogo (`name` também aceito) |
-| `descricao` | string | Ideia do jogo — mín. 10 caracteres (`ideia` também aceito) |
-| `price_brl` | número | Preço planejado em reais |
-| `genres` | lista | Gêneros em português |
-| `categories` | lista | Categorias Steam planejadas |
-| `release_year` | inteiro | Ano de lançamento previsto |
-
-### Body de exemplo (Postman → `POST /api/report`)
-
-```json
-{
-  "titulo": "Pixel Quest BR",
-  "descricao": "Roguelike 2D em pixel art com combate rápido, progressão permanente e foco em narrativa local brasileira. Público-alvo: fãs de Hollow Knight e Hades.",
-  "price_brl": 24.99,
-  "genres": ["Ação", "Indie", "Aventura"],
-  "categories": [
-    "Um jogador",
-    "Proezas Steam",
-    "Compat. total c/ comando",
-    "Steam Cloud"
-  ],
-  "release_year": 2025,
-  "platforms": 1,
-  "supported_languages": 2,
-  "achievements": 30,
-  "indie": true,
-  "coming_soon": true,
-  "controller_support": "full"
-}
-```
-
-### Resposta (`/api/report`)
+**Exemplo de resposta (trecho):**
 
 ```json
 {
   "status": "sucesso",
   "modo": "pre-lancamento",
-  "jogo": {
-    "titulo": "Pixel Quest BR",
-    "descricao": "..."
-  },
+  "jogo": { "titulo": "...", "descricao": "..." },
   "predicao_ml": {
-    "status": "sucesso",
-    "modo": "pre-lancamento",
-    "kpis_analisados": 95,
     "previsao_pixel_oracle": {
-      "risco_comercial": "Risco Médio",
-      "chance_sucesso_estimada_pct": 62.5,
-      "probabilidades": { }
+      "risco_comercial": "Alto Risco",
+      "chance_sucesso_estimada_pct": 90.4,
+      "probabilidades": { "Alto Risco": 0.904, "Risco Médio": 0.071, "Baixo Risco (Sucesso)": 0.026 }
     }
   },
-  "insights": {
-    "resumo": "...",
-    "dicas": ["...", "...", "..."],
-    "fonte": "gemini"
-  }
+  "insights": { "resumo": "...", "dicas": ["...", "..."], "fonte": "gemini" }
 }
 ```
 
-### ML direto (`POST :8000/predict`)
+### ML direto (opcional)
 
-Aceita o **mesmo JSON**. `titulo` e `descricao` vão para o Gemini; o ML usa só metadados planejados.
+| Método | URL |
+|--------|-----|
+| GET | `http://127.0.0.1:8000/` |
+| POST | `http://127.0.0.1:8000/predict` |
+| Docs | `http://127.0.0.1:8000/docs` |
 
-#### Classes de risco
+O ML usa o mesmo JSON, mas **não** usa `titulo`/`descricao` no modelo — só metadados numéricos/categóricos.
 
-| Classe | Regra (vendas estimadas) |
-|--------|---------------------------|
-| Baixo Risco (Sucesso) | ≥ 50.000 |
-| Risco Médio | ≥ 10.000 |
-| Alto Risco | < 10.000 |
+---
 
-### 3. Exemplo com curl
+## Corpo da requisição
 
-**macOS / Linux / Windows (Git Bash):**
+### Obrigatórios (sempre)
+
+| Campo | Tipo | Notas |
+|-------|------|--------|
+| **`titulo`** | string | Nome do jogo. Alias: `name` |
+| **`descricao`** | string | Ideia / pitch, **mín. 10 caracteres**. Aliases: `ideia`, `description` |
+| **`price_brl`** | number | Preço planejado (R$) |
+| **`genres`** | string[] | Em português: `"Ação"`, `"Indie"`, … |
+| **`categories`** | string[] | Ex.: `"Um jogador"`, `"Proezas Steam"` |
+| **`release_year`** | number | Ano previsto de lançamento |
+
+### Opcionais (têm valor padrão)
+
+`platforms`, `supported_languages`, `dlc`, `achievements`, `metacritic`, `indie`, `coming_soon`, `singleplayer`, `multiplayer`, `is_online`, `early_access`, `trading_cards`, `workshop`, `is_free`, `adult_content`, `controller_support`, `type`, `period_time`, etc.
+
+### Não enviar (causa erro)
+
+Campos de **jogo já publicado** — rejeitados no modo pré-lançamento:
+
+`total_reviews`, `total_positive`, `user_score`, `score_desc`, `multiplicador_boxleiter`, `vendas_estimadas`
+
+### Classes de risco (saída do ML)
+
+| Classe | Interpretação (histórico BR) |
+|--------|----------------------------|
+| Baixo Risco (Sucesso) | Melhor desempenho comercial estimado |
+| Risco Médio | Intermediário |
+| Alto Risco | Desempenho fraco |
+
+`chance_sucesso_estimada_pct` = probabilidade (%) da classe que o modelo escolheu.
+
+---
+
+## Postman
+
+### Configuração
+
+1. **Method:** `POST` para `/predict` e `/report`
+2. **URL principal:** `http://127.0.0.1:3000/api/report`
+3. **Headers:** `Content-Type: application/json`
+4. **Body:** raw → JSON abaixo (não use o body antigo só com preço/gêneros — faltam `titulo` e `descricao`)
+
+### Body de referência (copiar e colar)
+
+```json
+{
+  "titulo": "What The Duck",
+  "descricao": "Jogo de ação e aventura indie com elementos de RPG. Planejado para comando e conquistas na Steam, preço acessível no mercado BR.",
+  "price_brl": 11.39,
+  "genres": ["Ação", "Aventura", "Indie", "RPG"],
+  "categories": [
+    "Um jogador",
+    "Proezas Steam",
+    "Compat. total c/ comando",
+    "Steam Cloud",
+    "Partilha de Biblioteca"
+  ],
+  "release_year": 2023,
+  "platforms": 1,
+  "supported_languages": 3,
+  "achievements": 44,
+  "indie": true,
+  "coming_soon": false,
+  "controller_support": "full"
+}
+```
+
+### Collection sugerida
+
+| # | Método | URL |
+|---|--------|-----|
+| 1 | GET | `http://127.0.0.1:3000/api/health` |
+| 2 | POST | `http://127.0.0.1:3000/api/predict` |
+| 3 | POST | `http://127.0.0.1:3000/api/report` |
+
+---
+
+## Variáveis de ambiente
+
+### `api/.env` (API principal)
+
+```env
+PORT=3000
+ML_SERVICE_URL=http://localhost:8000
+GEMINI_API_KEY=sua_chave_google_ai
+GEMINI_MODEL=gemini-2.5-flash
+```
+
+| Variável | Local | Docker |
+|----------|-------|--------|
+| `ML_SERVICE_URL` | `http://localhost:8000` | Definido no `docker-compose.yml` (`http://ml-service:8000`) |
+| `GEMINI_API_KEY` | `api/.env` | Lido via `env_file: ./api/.env` |
+
+### `ml-service/.env` (opcional)
+
+```env
+DATA_SOURCE=json
+INCLUDE_REVIEW_FEATURES=false
+```
+
+---
+
+## Erros comuns
+
+| Sintoma | Causa | Solução |
+|--------|-------|---------|
+| **500** `Campo obrigatório: titulo` (API principal) | Body sem `titulo` / `descricao` | Inclua os dois campos no JSON |
+| **500** reviews não aceitas (API principal) | Body com `total_reviews`, `user_score`, etc. | Remova campos de review |
+| **422** (ML direto `:8000`) | Schema Pydantic: campo faltando ou extra | Use só campos documentados acima |
+| **502** / `origem: ml-service` | ML parado ou URL errada | Suba ML na 8000; confira `ML_SERVICE_URL` |
+| **503** (ML) | Sem `artifacts/modelo_rf.pkl` | Rode `python ml/train.py` |
+| **429** / `origem: gemini` | Cota Google esgotada | Nova chave, billing ou outro modelo |
+| `fonte: "fallback"` no 200 OK | Sem `GEMINI_API_KEY` ou erro Gemini | Configure `api/.env` |
+| Porta em uso | Docker + local ao mesmo tempo | `docker compose down` ou pare `uvicorn`/`npm run dev` |
+
+---
+
+## Docker
 
 ```bash
-curl -X POST "http://127.0.0.1:3000/api/report" \
-  -H "Content-Type: application/json" \
-  -d "{\"titulo\":\"Pixel Quest BR\",\"descricao\":\"Aventura indie 2D com exploração e crafting.\",\"price_brl\":19.90,\"genres\":[\"Indie\",\"Aventura\"],\"categories\":[\"Um jogador\"],\"release_year\":2025}"
+# Na raiz do repositório
+docker compose up --build -d
+curl http://localhost:3000/api/health
 ```
 
-### 4. Postman
+Recriar só a API após mudar `api/.env`:
 
-**ML direto (porta 8000)**
+```bash
+docker compose up -d --force-recreate api
+```
 
-| # | Método | URL |
-|---|--------|-----|
-| 1 | GET | `http://127.0.0.1:8000/` |
-| 2 | POST | `http://127.0.0.1:8000/predict` |
-
-**BFF (porta 3000)** — suba o `api` com `npm run dev` antes
-
-| # | Método | URL |
-|---|--------|-----|
-| 3 | GET | `http://127.0.0.1:3000/api/health` |
-| 4 | POST | `http://127.0.0.1:3000/api/predict` |
-| 5 | POST | `http://127.0.0.1:3000/api/report` |
-
-Em todas as POST: Body → **raw** → **JSON** → cole o exemplo completo da seção 2.
+Script com checagem de artefatos: `./scripts/docker-up.sh`
 
 ---
 
-## Fluxo recomendado (do zero)
+## Repositórios relacionados
 
-```text
-1. Clonar o repositório
-2. ml-service: venv + pip install + python ml/train.py
-3. ml-service: uvicorn main:app --reload  (porta 8000)
-4. api: npm install + cp .env.example .env + npm run dev  (porta 3000)
-5. Testar POST http://localhost:3000/api/report
-6. (Opcional) docker compose up --build
+| Repositório | Papel |
+|-------------|--------|
+| **PixelOracle-data-base** | Coleta Steam → gera `database_steam_br.json` |
+| **PixelOracle-API** (este) | Treino, ML, API principal |
+| **Pixel-Oracle-FrontEnd** | UI → `POST {API_URL}/api/report` |
+
+---
+
+## Estrutura do código
+
+```
+PixelOracle-API/
+├── ml-service/
+│   ├── domain/           # Risco, período
+│   ├── application/      # Casos de uso, payload pré-lançamento
+│   ├── infrastructure/   # Artefatos, repositório JSON
+│   ├── ml/               # features.py, train.py
+│   ├── presentation/     # FastAPI, GamePitchInput
+│   ├── artifacts/        # .pkl (gitignore)
+│   └── data/
+├── api/                    # API principal (Node.js)
+│   └── src/
+│       ├── services/       # mlService, geminiService
+│       ├── presentation/   # rotas, validação
+│       └── application/    # GenerateFullReportUseCase
+├── docker-compose.yml
+├── scripts/docker-up.sh
+├── DOCKER.md
+└── README.md
 ```
 
 ---
 
-## Solução de problemas
-
-| Problema | Solução |
-|----------|---------|
-| `python: command not found` (Mac) | Use `python3` |
-| `ModuleNotFoundError` | Ative o `.venv` e rode `pip install -r requirements.txt` |
-| API retorna **503** | Execute `python ml/train.py` para gerar `artifacts/` |
-| `FileNotFoundError` no JSON | Confirme `data/database_steam_br.json` |
-| Predição estranha / sempre igual | Verifique gêneros/categorias em **português** |
-| BFF retorna **502** | Confirme o ml-service na porta 8000 |
-| PowerShell não ativa o venv | Use `Set-ExecutionPolicy RemoteSigned` ou CMD |
-
----
-
-## Relação com outros repositórios
-
-- **PixelOracle-data-base** — coleta Steam e gera `database_steam_br.json`
-- **PixelOracle-API** (este monorepo) — ML + BFF
-- **Pixel-Oracle-FrontEnd** (repositório separado) — Angular; consome `http://localhost:3000/api`
-
-Para melhorar a acurácia, aumente o dataset no repositório de coleta e substitua `ml-service/data/database_steam_br.json`, depois rode o treino novamente.
-
----
-
-## Licença e uso acadêmico
-
-Projeto desenvolvido para fins de pesquisa acadêmica (TCC) e análise do mercado de games brasileiros na Steam.
+Projeto acadêmico (TCC) — Steam, mercado brasileiro de jogos indie.

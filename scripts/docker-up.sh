@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Sobe ML + BFF com Docker Compose (verifica artefatos do modelo antes).
+# Sobe ML + API principal com Docker Compose (verifica artefatos do modelo antes).
 
 set -euo pipefail
 
