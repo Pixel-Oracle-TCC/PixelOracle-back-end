@@ -1,3 +1,10 @@
+/**
+ * Bootstrap da API principal (porta pública do frontend).
+ *
+ * DI manual (sem Nest): monta MlService + Gemini/Fallback → GenerateFullReportUseCase.
+ * Por quê dois serviços: esta API não acessa Postgres — só orquestra o ml-service.
+ * Ver vault: [[Por que dois servicos e um banco]] / [[Por que Ports and Adapters]].
+ */
 import "dotenv/config";
 import cors from "cors";
 import express from "express";
@@ -15,13 +22,14 @@ const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-2.0-flash";
 
 const mlService = new MlService(ML_SERVICE_URL);
 
+// Sem chave: produto ainda funciona (narrativa fallback a partir do dashboard)
 const insightsService = GEMINI_API_KEY
   ? new GeminiService(GEMINI_API_KEY, GEMINI_MODEL)
   : new FallbackInsightsService();
 
 if (!GEMINI_API_KEY) {
   console.warn(
-    "⚠️  GEMINI_API_KEY não definida — /report usará dicas fallback estáticas."
+    "⚠️  GEMINI_API_KEY não definida — /report usará narrativa fallback do dashboard triangulado."
   );
 }
 
@@ -36,7 +44,7 @@ app.use("/api", createRoutes(generateFullReport, mlService));
 app.use(errorHandler);
 
 app.listen(PORT, () => {
-  console.log(`🚀 Pixel Oracle — API principal (análise de risco e chances de sucesso)`);
+  console.log(`🚀 Pixel Oracle — API principal (triangulação ML + RAG + ABSA)`);
   console.log(`   http://localhost:${PORT}`);
   console.log(`   ML: ${ML_SERVICE_URL}`);
   console.log(`   Rotas: GET /api/health | POST /api/predict | POST /api/report`);
