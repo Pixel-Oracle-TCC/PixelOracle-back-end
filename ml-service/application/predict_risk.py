@@ -1,4 +1,9 @@
-"""Caso de uso: prever risco e chances de sucesso (pré-lançamento)."""
+"""Caso de uso: prever risco e chances de sucesso (pré-lançamento).
+
+Importante: o X do modelo NÃO inclui reviews/scores reais do pitch.
+Isso evita data leakage (acurácia ~95% enviesada vs ~55% honesta).
+Ver vault: [[Por que Random Forest]].
+"""
 
 from typing import Any, Dict
 
@@ -32,12 +37,15 @@ class PredictCommercialRiskUseCase:
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         bundle = self._registry.get_bundle()
+        # normalize: aliases (name/ideia); to_ml_payload: tira titulo/descricao da matriz
+        # e remove campos pós-lançamento se alguém enviar por engano
         pitch = normalize_pitch(payload)
         ml_payload = to_ml_payload(pitch)
 
         if not pitch.get("titulo") or not pitch.get("descricao"):
             raise ValueError("Campos obrigatórios: titulo e descricao (ideia do jogo).")
 
+        # period_time (pré/pós pandemia) entra como feature categórica no treino
         if not ml_payload.get("period_time"):
             ml_payload = {
                 **ml_payload,
@@ -47,6 +55,7 @@ class PredictCommercialRiskUseCase:
         row = record_to_row(ml_payload)
         df = pd.DataFrame([row])
 
+        # Alinha colunas exatamente como no treino (MLBs + feature_columns do artifact)
         features = prepare_inference_matrix(
             df,
             genre_mlb=bundle.genre_mlb,
@@ -65,6 +74,7 @@ class PredictCommercialRiskUseCase:
                 for cls, probability in zip(classes, proba)
             }
 
+        # % na classe prevista — útil no dashboard / narrativa
         chance = success_chance_percent(probabilities, str(prediction))
 
         return {

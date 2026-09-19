@@ -1,13 +1,22 @@
 /**
- * Integração com Google Gemini — dicas comerciais pré-lançamento.
+ * Integração Gemini — redige dashboard a partir do objeto triangulado.
+ *
+ * Dois adapters da mesma port (IInsightsService):
+ * - GeminiService: chama a LLM com prompt restritivo
+ * - FallbackInsightsService: copia os "ponto" do dashboard (sem rede)
+ *
+ * Sem chave no boot (index.ts) → FallbackInsightsService.
+ * Ver vault: [[Por que Gemini so redige]] / [[Por que Ports and Adapters]].
  */
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { GamePitch } from "../domain/entities/GamePitch.js";
-import type { CommercialInsights } from "../domain/entities/FullReport.js";
-import type { MlPredictionResult } from "../domain/entities/MlPrediction.js";
+import type {
+  DashboardNarrative,
+  TriangulationResult,
+} from "../domain/entities/FullReport.js";
 import type { IInsightsService } from "../domain/ports/IInsightsService.js";
-import { buildCommercialTipsPrompt } from "../infrastructure/prompts/commercialTipsPrompt.js";
+import { buildDashboardNarrativePrompt } from "../infrastructure/prompts/dashboardNarrativePrompt.js";
 
 export class GeminiService implements IInsightsService {
   private readonly model;
@@ -17,73 +26,78 @@ export class GeminiService implements IInsightsService {
     this.model = genAI.getGenerativeModel({ model: modelName });
   }
 
-  async generateCommercialTips(
+  async narrateDashboard(
     pitch: GamePitch,
-    prediction: MlPredictionResult
-  ): Promise<CommercialInsights> {
-    const prompt = buildCommercialTipsPrompt(pitch, prediction);
+    triangulation: TriangulationResult
+  ): Promise<DashboardNarrative> {
+    const prompt = buildDashboardNarrativePrompt(pitch, triangulation);
     const result = await this.model.generateContent(prompt);
     const text = result.response.text().trim();
-
-    return parseGeminiResponse(text);
+    return parseNarrativeResponse(text);
   }
 }
 
-/** Fallback quando GEMINI_API_KEY não está configurada. */
+/** Fallback: expõe os pontos triangulados brutos sem Gemini. */
 export class FallbackInsightsService implements IInsightsService {
-  async generateCommercialTips(
+  async narrateDashboard(
     pitch: GamePitch,
-    prediction: MlPredictionResult
-  ): Promise<CommercialInsights> {
-    const risco = prediction.previsao_pixel_oracle.risco_comercial;
-    const probs = prediction.previsao_pixel_oracle.probabilidades ?? {};
-    const pct = formatTopProbability(probs, risco);
+    triangulation: TriangulationResult
+  ): Promise<DashboardNarrative> {
+    const dash = triangulation.dashboard;
+    const pred = triangulation.predicao_ml as {
+      risco_comercial?: string;
+      chance_sucesso_estimada_pct?: number;
+    };
 
     return {
-      resumo: `"${pitch.titulo}" foi classificado como "${risco}" no cenário pré-lançamento${pct ? ` (${pct} na classe prevista)` : ""}. Configure GEMINI_API_KEY para análise da sua ideia.`,
-      dicas: [
-        "Refine o escopo do jogo para combinar com o gênero e o público descrito no pitch.",
-        "Alinhe página Steam, trailer e preço com jogos indie brasileiros do mesmo nicho.",
-        "Planeje visibilidade pré-lançamento (demo, wishlist, comunidade) para melhorar as chances na semana 1.",
-      ],
+      resumo:
+        `"${pitch.titulo}" — triangulação disponível sem Gemini. ` +
+        `Risco estatístico: ${pred.risco_comercial ?? "n/d"}` +
+        (pred.chance_sucesso_estimada_pct != null
+          ? ` (${pred.chance_sucesso_estimada_pct}% na classe prevista).`
+          : ".") +
+        " Configure GEMINI_API_KEY para narrativa redigida.",
+      pontos_fortes: dash.pontos_fortes.map((p) => p.ponto).slice(0, 5),
+      pontos_fracos: dash.pontos_fracos.map((p) => p.ponto).slice(0, 5),
+      oportunidades: dash.oportunidades.map((p) => p.ponto).slice(0, 5),
+      riscos: dash.riscos.map((p) => p.ponto).slice(0, 5),
       fonte: "fallback",
     };
   }
 }
 
-function formatTopProbability(
-  probs: Record<string, number>,
-  predictedClass: string
-): string {
-  const value = probs[predictedClass];
-  if (value == null) return "";
-  return `${Math.round(value * 100)}%`;
-}
-
-function parseGeminiResponse(text: string): CommercialInsights {
+/** Extrai JSON da resposta; se a LLM enrolar com markdown, ainda tentamos recuperar. */
+function parseNarrativeResponse(text: string): DashboardNarrative {
   try {
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
-      const parsed = JSON.parse(jsonMatch[0]) as {
-        resumo?: string;
-        dicas?: string[];
-      };
-      if (parsed.resumo && Array.isArray(parsed.dicas)) {
+      const parsed = JSON.parse(jsonMatch[0]) as Partial<DashboardNarrative>;
+      if (parsed.resumo) {
         return {
           resumo: parsed.resumo,
-          dicas: parsed.dicas.slice(0, 5),
+          pontos_fortes: asStringArray(parsed.pontos_fortes),
+          pontos_fracos: asStringArray(parsed.pontos_fracos),
+          oportunidades: asStringArray(parsed.oportunidades),
+          riscos: asStringArray(parsed.riscos),
           fonte: "gemini",
         };
       }
     }
   } catch {
-    /* usa texto bruto */
+    /* fallback texto bruto */
   }
 
-  const lines = text.split("\n").filter((l) => l.trim());
   return {
-    resumo: lines[0] ?? text,
-    dicas: lines.slice(1, 4).map((l) => l.replace(/^[-*\d.]+\s*/, "")),
+    resumo: text.slice(0, 500),
+    pontos_fortes: [],
+    pontos_fracos: [],
+    oportunidades: [],
+    riscos: [],
     fonte: "gemini",
   };
+}
+
+function asStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.map((v) => String(v)).slice(0, 8);
 }

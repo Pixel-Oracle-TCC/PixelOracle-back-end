@@ -1,6 +1,6 @@
-"""Schemas da API — pitch pré-lançamento (jogo ainda não publicado na Steam)."""
+"""Schemas da API — pitch pré-lançamento e respostas de triangulação."""
 
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
@@ -54,6 +54,42 @@ class GamePitchInput(BaseModel):
 
     controller_support: str = "none"
     type: str = "game"
+
+
+class RetrieveSimilarInput(BaseModel):
+    """Entrada mínima para busca de jogos similares."""
+
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
+
+    titulo: str = Field(..., min_length=1, max_length=200)
+    descricao: str = Field(
+        ...,
+        min_length=10,
+        max_length=4000,
+        validation_alias=AliasChoices("descricao", "ideia", "description"),
+    )
+    genres: List[str] = Field(..., min_length=1)
+    top_k: Optional[int] = Field(None, ge=1, le=50)
+
+
+class DashboardEvidence(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    tipo: Optional[str] = None
+
+
+class DashboardPoint(BaseModel):
+    ponto: str
+    evidencia: Dict[str, Any] = Field(default_factory=dict)
+
+
+class TriangulationDashboard(BaseModel):
+    pontos_fortes: List[DashboardPoint] = Field(default_factory=list)
+    pontos_fracos: List[DashboardPoint] = Field(default_factory=list)
+    oportunidades: List[DashboardPoint] = Field(default_factory=list)
+    riscos: List[DashboardPoint] = Field(default_factory=list)
+    jogos_similares: List[Dict[str, Any]] = Field(default_factory=list)
+    insights_genero: List[Dict[str, Any]] = Field(default_factory=list)
 
 
 GameDataInput = GamePitchInput

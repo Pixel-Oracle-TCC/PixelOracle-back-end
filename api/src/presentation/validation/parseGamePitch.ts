@@ -1,5 +1,9 @@
 import type { GamePitch } from "../../domain/entities/GamePitch.js";
 
+/**
+ * Campos pós-lançamento: se entrarem no body, contaminam o contrato pré-lançamento
+ * e podem reintroduzir data leakage no caminho do RF. Rejeitamos de propósito.
+ */
 const POST_LAUNCH_KEYS = [
   "total_reviews",
   "total_positive",
@@ -9,6 +13,11 @@ const POST_LAUNCH_KEYS = [
   "vendas_estimadas",
 ] as const;
 
+/**
+ * Valida e normaliza o pitch do frontend/dev.
+ * Aliases (name, ideia, description) existem para facilitar integração.
+ * Defaults assumem indie pré-lançamento (coming_soon=true, metacritic=0, etc.).
+ */
 export function parseGamePitch(body: unknown): GamePitch {
   if (!body || typeof body !== "object") {
     throw new Error("Body JSON inválido.");
@@ -59,6 +68,7 @@ export function parseGamePitch(body: unknown): GamePitch {
     supported_languages: num(b.supported_languages, 1),
     dlc: num(b.dlc, 0),
     achievements: num(b.achievements, 0),
+    // Jogo ainda sem nota — default 0 alinha com treino pré-lançamento
     metacritic: num(b.metacritic, 0),
     required_age_num: num(b.required_age_num, 0),
     singleplayer: bool(b.singleplayer, true),

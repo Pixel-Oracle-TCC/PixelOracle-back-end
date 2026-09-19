@@ -1,8 +1,28 @@
-# Pixel Oracle — ML (8000) + API principal (3000)
+# Pixel Oracle — Postgres+pgvector + ML (8000) + API principal (3000)
 # Uso: docker compose up --build
-# Pré-requisito: artefatos em ml-service/artifacts/ (rode python ml/train.py antes)
+# Pré-requisito ML: artefatos em ml-service/artifacts/ (python ml/train.py)
+# Schema: aplicado automaticamente no primeiro start do serviço db (001_schema.sql)
 
 services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: pixel-oracle-db
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: pixel
+      POSTGRES_PASSWORD: pixel
+      POSTGRES_DB: pixeloracle
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./ml-service/db/migrations/001_schema.sql:/docker-entrypoint-initdb.d/001_schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pixel -d pixeloracle"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
   ml-service:
     build:
       context: ./ml-service
@@ -17,23 +37,29 @@ services:
       DATA_SOURCE: json
       DATA_JSON_PATH: data/database_steam_br.json
       INCLUDE_REVIEW_FEATURES: "false"
+      DATABASE_URL: postgresql://pixel:pixel@db:5432/pixeloracle
+      EMBEDDING_MODEL: all-MiniLM-L6-v2
+      SIMILAR_GAMES_TOP_K: "5"
     env_file:
       - path: .env
         required: false
       - path: ./ml-service/.env
         required: false
+    depends_on:
+      db:
+        condition: service_healthy
     healthcheck:
       test:
         [
           "CMD",
           "python",
           "-c",
-          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/')",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')",
         ]
       interval: 10s
       timeout: 5s
       retries: 6
-      start_period: 20s
+      start_period: 40s
     restart: unless-stopped
 
   api:
@@ -46,7 +72,6 @@ services:
     environment:
       PORT: "3000"
       ML_SERVICE_URL: http://ml-service:8000
-    # GEMINI_* vêm só do env_file (evita sobrescrever api/.env com vazio do host)
     env_file:
       - path: ./api/.env
         required: false
@@ -56,3 +81,6 @@ services:
       ml-service:
         condition: service_healthy
     restart: unless-stopped
+
+volumes:
+  pgdata:

@@ -1,0 +1,30 @@
+---
+description: Impede a reintrodução de dados pessoais/PII vindos da Steam e garante conformidade com LGPD e com os Termos de Uso da Steam Web API em qualquer código novo.
+globs:
+alwaysApply: true
+---
+
+# Conformidade e Dados Sensíveis — Pixel Oracle
+
+Este projeto já avaliou e **descartou deliberadamente** coletar/cruzar dados pessoais de usuários da Steam (perfil, biblioteca, conquistas, tempo de jogo por indivíduo). Essa decisão não é uma preferência de estilo — é baseada em:
+- Cláusula 2 dos **Termos de Uso da Steam Web API**: *"You will only retrieve Steam Data about a Steam end user as requested by the end user."*
+- **LGPD** (Lei 13.709/2018): perfilamento de indivíduo identificável sem base legal/consentimento.
+
+Qualquer código que violar isso — mesmo que pareça uma melhoria funcional — deve ser **recusado**, e você deve avisar explicitamente em vez de implementar.
+
+## Regras obrigatórias
+
+1. **Nunca persista o campo `author.steamid`** (nem qualquer outro identificador de usuário individual) vindo da resposta de `appreviews` ou de qualquer endpoint da Steam. Ele pode existir temporariamente em memória durante o processamento (ex: para deduplicar por `recommendationid`), mas nunca deve ser gravado em banco, log persistente, ou arquivo de saída.
+2. **Nunca implemente chamadas a `GetPlayerSummaries`, `GetOwnedGames`, `GetPlayerAchievements`, `GetFriendList`, `GetPlayerBans` ou qualquer endpoint de `ISteamUser`/`IPlayerService`** sobre um usuário que não seja o próprio operador do sistema autenticando a própria conta. Se alguém pedir uma feature que exigiria isso, explique o motivo do bloqueio (cláusula 2 dos ToS) antes de implementar qualquer alternativa.
+3. **Dados de jogos (não de usuários) são o único escopo permitido**: `appdetails`, `GetAppList`, SteamSpy (owners agregados/estimados, não vinculados a indivíduo), `appreviews` (texto + metadados agregados da review, sem autor).
+4. Ao processar reviews, sempre **deduplique por `recommendationid`**, nunca por `steamid` do autor.
+5. Toda nova tabela, coleção ou schema que armazene texto de usuário (reviews, comentários) deve ser revisada quanto a campos de identificação antes de ser considerada pronta — se você criar uma tabela `reviews`, confirme explicitamente no código/comentário que nenhuma coluna de identificação de autor foi incluída.
+6. Se o Random Forest, o motor de triangulação, ou qualquer prompt da Gemini receber como entrada algo que pareça dado pessoal de terceiro (não do próprio desenvolvedor usando o pitch), pare e pergunte antes de prosseguir.
+
+## O que fazer ao invés de perfilar usuários
+
+Se a tarefa pedida parecer estar pedindo personas/perfis de jogadores, direcione para o padrão já validado do projeto: agregações por **gênero** a partir de `genre_insights` (aspecto + sentimento extraídos de reviews, sem vínculo a indivíduo) — nunca por usuário.
+
+## Ao gerar documentação
+
+Sempre que este tipo de decisão for relevante para o código que você acabou de escrever, gere/atualize a nota correspondente em `/decisoes/` explicando o que foi evitado e por quê (isso alimenta diretamente a seção de conformidade do TCC).
