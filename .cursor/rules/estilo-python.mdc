@@ -1,0 +1,33 @@
+---
+description: Padrão de estilo de código Python para o pixel-oracle-ml-service.
+globs: **/*.py
+alwaysApply: false
+---
+
+# Estilo de Código — Python (`pixel-oracle-ml-service`)
+
+## Tipagem e estrutura
+- Use **type hints** em toda função (parâmetros e retorno), sem exceção — o projeto usa FastAPI/Pydantic, e tipagem consistente evita boa parte dos bugs de contrato entre módulos.
+- Modelos de dados (request/response de API, entidades como `Game`, `Review`) devem ser `Pydantic BaseModel` ou dataclasses tipadas — nunca `dict` solto passando entre funções.
+- Funções devem ter **docstring curta** explicando o propósito, especialmente em módulos de `ml/`, `absa/`, `triangulation/` e `retrieval/` — esses módulos vão ser referenciados na metodologia do TCC, então a docstring deve favorecer quem for ler o código para escrever sobre ele depois, não só quem for mantê-lo.
+
+## Nomenclatura
+- Nomes de variáveis e funções em **inglês** (`similar_games`, `extract_aspects`), mesmo que a documentação do vault e os comentários de negócio estejam em português — mantém consistência com o ecossistema Python/bibliotecas usadas.
+- Nomes de colunas de banco e campos de schema JSON expostos pela API podem ficar em português quando já fizerem parte de um contrato estabelecido (ex: `titulo`, `descricao`, `genero`), para manter compatibilidade com o que já existe.
+
+## Tratamento de erros
+- Nunca deixe uma chamada a serviço externo (Steam API, SteamSpy, Gemini, banco) sem tratamento explícito de exceção. Toda função que faz I/O externo deve:
+  - Capturar falhas de rede/timeout especificamente (não `except Exception` genérico sem re-raise ou log).
+  - Logar o erro com contexto suficiente para debug (qual jogo, qual review, qual etapa do pipeline).
+  - Ter um comportamento de fallback definido quando fizer sentido (ex: `/triangulate` deve funcionar mesmo se a Gemini falhar, retornando o objeto de triangulação bruto).
+
+## Scripts offline (coleta, embeddings, ABSA)
+- Scripts que processam grandes volumes (coleta de jogos, geração de embeddings, extração ABSA em lote) devem ser **idempotentes**: rodar de novo não deve duplicar dados. Use `UPSERT`/`ON CONFLICT` no Postgres, ou verificação de existência antes de inserir.
+- Scripts longos devem imprimir progresso (ex: a cada N itens processados) — evita achar que travou quando só está demorando.
+- Respeite rate limits das APIs externas explicitamente no código (não apenas confiar que "não vai bater o limite") — use `time.sleep` ou uma lib de rate limiting.
+
+## Testes
+- Módulos de `triangulation/` e `absa/` precisam de pelo menos um teste unitário com dado sintético (não é necessário mockar a Gemini inteira, mas a lógica de combinação/agregação deve ser testável sem chamada de rede).
+
+## Dependências
+- Ao adicionar uma biblioteca nova, adicione a versão fixada em `requirements.txt` (não deixe sem pin) e explique em uma linha de comentário por que ela foi escolhida, se não for óbvio.

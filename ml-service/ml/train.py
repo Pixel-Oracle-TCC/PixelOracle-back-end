@@ -1,4 +1,10 @@
-"""Treinamento do modelo em modo pré-lançamento (sem reviews na matriz de features)."""
+"""Treinamento do modelo em modo pré-lançamento (sem reviews na matriz de features).
+
+Por quê strip de reviews no X: incluir score/reviews pós-lançamento inflava a
+acurácia (~95%) com leakage. Modo honesto (~55% CV) usa só metadados planejáveis.
+Hiperparâmetros em build_classifier(); mudanças → /experiments/random_forest.md.
+Ver vault: [[Por que Random Forest]].
+"""
 
 import os
 import sys
@@ -51,9 +57,10 @@ def prepare_training_data(
     df["price_brl"] = df["price_brl"].fillna(0.0)
     df = df[df["genres"].apply(lambda g: len(as_list(g)) > 0)].copy()
 
+    # y vem do histórico (vendas_estimadas); X NÃO pode ver reviews do mesmo jogo
     y = df[LABEL_SOURCE_COL].apply(create_risk_label)
 
-    # Apenas metadados planejáveis antes do lançamento
+    # Apenas metadados planejáveis antes do lançamento (preço, gêneros, flags…)
     df_features = strip_for_prelaunch_training(df)
     X, genre_mlb, category_mlb = build_feature_matrix(
         df_features, fit_encoders=True, include_review_features=False
@@ -62,6 +69,7 @@ def prepare_training_data(
 
 
 def build_classifier() -> RandomForestClassifier:
+    # class_weight=balanced: classes de risco costumam ser desbalanceadas na base BR
     return RandomForestClassifier(
         n_estimators=300,
         max_depth=12,

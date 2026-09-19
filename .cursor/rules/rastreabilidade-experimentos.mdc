@@ -1,0 +1,40 @@
+---
+description: Exige registro estruturado de métricas antes/depois sempre que o modelo de ML, o pipeline de extração ABSA, ou os prompts da Gemini forem alterados.
+globs: **/ml/**,**/absa/**,**/triangulation/**,**/*prompt*
+alwaysApply: false
+---
+
+# Rastreabilidade de Experimentos — Pixel Oracle
+
+Este projeto depende de conseguir mostrar, no TCC, a **evolução** do sistema por versão — no mesmo espírito de rigor do trabalho de referência (Zênite), que documentou ~29 versões com métricas comparáveis. Mudar um modelo, um prompt ou um pipeline sem registrar o efeito da mudança é uma perda irrecuperável de dado experimental — não dá pra reconstruir depois.
+
+## Quando esta regra se aplica
+
+Qualquer alteração em:
+- Hiperparâmetros ou features do Random Forest (`ml/train.py` ou equivalente).
+- Prompt usado na extração ABSA (`absa/extractor.py`).
+- Lógica do motor de triangulação (`triangulation/engine.py`) que afete o resultado final.
+- Modelo de embedding ou parâmetros de busca vetorial (`retrieval/`).
+
+## O que fazer antes de considerar a tarefa concluída
+
+1. **Antes de alterar**, rode a suíte de validação existente (cross-validation do Random Forest, ou o script de F1/Kappa do ABSA, conforme o componente) e capture as métricas atuais, se ainda não estiverem registradas.
+2. **Depois de alterar**, rode a mesma validação novamente.
+3. Registre o resultado em `/experiments/` (criar se não existir), em um arquivo por componente:
+   - `/experiments/random_forest.md` — tabela com colunas: versão, mudança principal, MAE/acurácia/F1 (conforme aplicável), R², leitura do resultado.
+   - `/experiments/absa_prompt.md` — tabela com: versão do prompt, estratégia (zero-shot/few-shot/few-shot por gênero), Kappa entre anotadores, F1 (Gemini vs. gold standard), leitura do resultado.
+   - `/experiments/triangulation.md` — mudanças na lógica de consolidação e efeito observado (qualitativo, se não houver métrica numérica direta).
+4. Cada entrada da tabela precisa de uma **leitura textual do resultado**, não só o número — uma frase explicando o que a mudança causou (positivo, negativo, neutro, e por quê, se souber).
+5. Se a mudança piorar uma métrica, **registre mesmo assim**. Resultado negativo documentado tem valor científico (mostra o processo de refinamento) — não omita.
+
+## Formato da tabela (usar Markdown)
+
+```markdown
+| Versão | Mudança principal | Métrica A | Métrica B | Leitura do resultado |
+|---|---|---|---|---|
+| v1 | ... | ... | ... | ... |
+```
+
+## Sincronização com a documentação do Obsidian
+
+Se a mudança representa um marco relevante (não um ajuste fino incremental), também atualize a nota correspondente em `/ml/` ou `/ia-generativa/` referenciando a tabela de `/experiments/` — a tabela é o dado bruto, a nota do vault é a interpretação narrativa que vai para o corpo do TCC.

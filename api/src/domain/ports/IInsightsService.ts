@@ -1,10 +1,16 @@
 import type { GamePitch } from "../entities/GamePitch.js";
-import type { MlPredictionResult } from "../entities/MlPrediction.js";
-import type { CommercialInsights } from "../entities/FullReport.js";
+import type {
+  DashboardNarrative,
+  TriangulationResult,
+} from "../entities/FullReport.js";
 
 export interface IInsightsService {
-  generateCommercialTips(
+  /**
+   * Redige o dashboard a partir do objeto já triangulado.
+   * A Gemini NÃO analisa do zero — só narra evidências existentes.
+   */
+  narrateDashboard(
     pitch: GamePitch,
-    prediction: MlPredictionResult
-  ): Promise<CommercialInsights>;
+    triangulation: TriangulationResult
+  ): Promise<DashboardNarrative>;
 }

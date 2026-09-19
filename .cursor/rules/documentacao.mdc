@@ -1,0 +1,87 @@
+---
+description: Mantém a documentação do projeto Pixel Oracle atualizada no vault do Obsidian a cada mudança relevante de código ou arquitetura.
+globs:
+alwaysApply: true
+---
+
+# Documentação automática — Vault Pixel Oracle (Obsidian)
+
+Você é responsável por manter o vault do Obsidian em `/Users/igorpierote/Documents/Obsidian\ Vault/TCC` (ajustar o caminho se o vault estiver em outro lugar do repositório) sempre sincronizado com o que é implementado. Isso é tão parte da tarefa quanto o código em si — não é opcional, não é "se sobrar tempo".
+
+## Quando criar ou atualizar uma nota
+
+Sempre que você:
+- Criar um novo módulo, serviço, endpoint ou componente.
+- Mudar uma decisão de arquitetura (ex: trocar banco de dados, mudar algoritmo, trocar biblioteca).
+- Implementar um novo pipeline (ex: coleta de dados, extração de aspectos, triangulação).
+- Alterar um contrato de API (schema de entrada/saída).
+- Tomar uma decisão técnica que teve alternativas descartadas (ex: "por que Random Forest e não outro algoritmo", "por que descartamos X fonte de dados").
+
+... você cria uma nota nova em `/Users/igorpierote/Documents/Obsidian\ Vault/TCC`, ou atualiza a nota existente se o tema já tiver uma.
+
+## Formato obrigatório das notas
+
+Siga exatamente o padrão já usado no vault (não invente um formato novo):
+
+```markdown
+# [emoji] Título da Nota
+
+[Um parágrafo curto de contexto, explicando o que é e por que existe.]
+
+## [emoji] Seção temática 1
+- Ponto objetivo em bullet
+- Outro ponto
+
+## [emoji] Seção temática 2
+Texto corrido quando fizer mais sentido que bullets (ex: explicar um fluxo).
+
+---
+*Relacionado:* [[Nome de Outra Nota]], [[Outra Nota Relacionada]]
+```
+
+Regras específicas:
+- **Título sempre com um emoji relevante ao tema** (ex: 🚀 para APIs, 🏗️ para arquitetura, 🧪 para dados/pipelines, 🤖 para modelagem/ML, ♊ para integrações de LLM, ⚠️ para riscos/limitações, 🧠 para decisões estratégicas).
+- **Cada seção (`##`) também leva um emoji**, seguindo o mesmo espírito das notas existentes (`## 🛣️ Endpoints`, `## 🛠️ Contrato de Entrada`, `## 📉 Saída`).
+- **Sempre termine com a linha `---` seguida de `*Relacionado:*`** listando as notas conectadas via wikilink `[[...]]`. Nunca deixe uma nota nova órfã — pelo menos uma conexão é obrigatória.
+- Use **wikilinks (`[[Nome da Nota]]`)** dentro do corpo do texto sempre que mencionar um conceito, serviço ou decisão que já tem (ou deveria ter) nota própria — não apenas no rodapé.
+- Nomes de arquivo/nota em português, sem acentuação problemática para o sistema de arquivos, seguindo o padrão já usado (ex: `Arquitetura de Microsserviços.md`, `Engenharia de Dados e Features.md`).
+
+## Estrutura de pastas do vault
+
+Organize por tema, espelhando a estrutura de repositórios do projeto:
+- `/arquitetura/` — decisões estruturais, diagramas, fluxos entre serviços
+- `/dados/` — pipelines de coleta, schema do banco, engenharia de features
+- `/ml/` — modelagem, treino, métricas, validação
+- `/ia-generativa/` — prompts, RAG, triangulação, integração com Gemini
+- `/decisoes/` — registros de decisão técnica (o formato "consideramos X, escolhemos Y, porque Z" — équivalente a um ADR, mas no estilo de nota do vault)
+
+Se não tiver certeza de qual pasta usar, prefira criar em `/decisoes/` e linkar de lá para as notas técnicas específicas.
+
+## O que NÃO fazer
+
+- Não crie uma nota para cada função ou arquivo de código — documentação aqui é sobre **decisões e arquitetura**, não um espelho linha a linha do código (isso é o que o próprio código/comentários já fazem).
+- Não duplique conteúdo entre notas — se um conceito já tem nota própria, linke com `[[...]]` em vez de reescrever a explicação.
+- Não escreva a nota em inglês nem misture idiomas — o vault é em português.
+- Não use este mecanismo para gerar documentação de commits individuais — é para marcos de desenvolvimento (uma feature terminada, uma decisão tomada), não para cada `git commit`.
+
+## Exemplo de nota nova, seguindo o padrão
+
+```markdown
+# 🧭 Motor de Triangulação
+
+O Motor de Triangulação é o componente central do [[ml-service]] responsável por combinar a predição estatística, os jogos similares recuperados via [[Retrieval e Busca Vetorial]] e os insights agregados de [[Extração de Aspectos (ABSA)]] em um único objeto estruturado, antes de qualquer texto ser gerado pela [[Integração Gemini e API principal|Gemini]].
+
+## 🎯 Responsabilidade
+- Consolidar sinais heterogêneos (número, similaridade semântica, padrão de opinião) sem que um sobreponha o outro silenciosamente.
+- Gerar o objeto intermediário `pontos_fortes / pontos_fracos / oportunidades / riscos`, com evidência associada a cada ponto.
+
+## 🛠️ Entradas e Saídas
+- **Entrada:** saída do [[Random Forest]], lista de jogos similares, dados do pitch do usuário.
+- **Saída:** JSON estruturado (ver contrato em [[API de Inferência]]).
+
+## ⚠️ Decisão descartada
+Consideramos deixar a Gemini gerar a análise direto a partir do pitch, sem essa etapa intermediária — descartado por risco de alucinação sem fundamentação (ver [[Desafio Técnico da Pesquisa]]).
+
+---
+*Relacionado:* [[Arquitetura de Microsserviços]], [[Retrieval e Busca Vetorial]], [[Extração de Aspectos (ABSA)]]
+```

@@ -1,0 +1,49 @@
+---
+description: Garante que mudanças em endpoints do ml-service e da api principal mantenham o contrato de request/response sincronizado entre os dois repositórios.
+globs: **/main.py,**/schema.py,**/routes/**,**/controllers/**,**/services/**
+alwaysApply: false
+---
+
+# Contrato de API entre Repositórios — Pixel Oracle
+
+O projeto é multi-repo (`pixel-oracle-frontend`, `pixel-oracle-api`, `pixel-oracle-ml-service`). O maior risco disso é um repositório mudar um contrato de API (schema de entrada ou saída) sem o(s) outro(s) acompanhar — um erro que só aparece em tempo de execução, não em tempo de desenvolvimento, porque cada repo é editado isoladamente.
+
+## Regra obrigatória ao alterar um endpoint
+
+Sempre que você criar ou modificar um endpoint em qualquer um dos repositórios (`/predict`, `/retrieve-similar`, `/triangulate` no `ml-service`; `/api/report` ou qualquer rota nova na `api`), você deve:
+
+1. **Atualizar o schema formal** do lado que está sendo alterado:
+   - `ml-service`: modelo Pydantic correspondente em `schema.py`.
+   - `api`: validação/tipo equivalente (ex: JSDoc, TypeScript interface, ou Zod/Joi se estiver em uso).
+2. **Verificar se o outro repositório consome esse endpoint.** Se consumir, você precisa:
+   - Ou confirmar que a mudança é retrocompatível (campo novo opcional, por exemplo), ou
+   - Sinalizar explicitamente que é uma mudança que quebra compatibilidade (breaking change) e que o outro repositório precisa ser atualizado em conjunto — não implemente silenciosamente uma mudança quebradora achando que "é só nesse repo".
+3. **Manter um arquivo de contrato compartilhado e legível por humano**, `CONTRATOS_API.md` na raiz de cada repositório (ou em `/arquitetura/Contratos de API.md` no vault, preferencialmente este último para manter tudo num lugar só), contendo:
+   - Endpoint, método, schema de request, schema de response, e qual repositório é dono (produtor) vs. consumidor.
+   - Atualize esse arquivo toda vez que um contrato mudar — trate isso como parte da tarefa, não como algo opcional.
+
+## Formato de referência para `CONTRATOS_API.md`
+
+```markdown
+## POST /triangulate (ml-service, consumido por: api principal)
+
+### Request
+\`\`\`json
+{ "titulo": "string", "descricao": "string", "genero": "string", ... }
+\`\`\`
+
+### Response
+\`\`\`json
+{
+  "predicao_ml": { "risco": "string", "probabilidade": 0.0 },
+  "dashboard": { "pontos_fortes": [...], "pontos_fracos": [...], ... }
+}
+\`\`\`
+
+### Histórico de mudanças
+- 2026-XX-XX: campo `jogos_similares` adicionado ao dashboard (retrocompatível).
+```
+
+## Ao encontrar uma inconsistência existente
+
+Se, ao trabalhar em um repositório, você perceber que o schema local não bate com o que `CONTRATOS_API.md` descreve (ou com o que o outro repositório parece esperar), **pare e avise** antes de prosseguir — não tente "adivinhar" qual dos dois lados está certo.
