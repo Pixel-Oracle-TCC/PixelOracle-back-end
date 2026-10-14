@@ -18,7 +18,7 @@ import { createRoutes } from "./presentation/routes/index.js";
 const PORT = Number(process.env.PORT ?? 3000);
 const ML_SERVICE_URL = process.env.ML_SERVICE_URL ?? "http://localhost:8000";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY ?? "";
-const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-2.0-flash";
+const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
 
 const mlService = new MlService(ML_SERVICE_URL);
 
@@ -29,11 +29,15 @@ const insightsService = GEMINI_API_KEY
 
 if (!GEMINI_API_KEY) {
   console.warn(
-    "⚠️  GEMINI_API_KEY não definida — /report usará narrativa fallback do dashboard triangulado."
+    "⚠️  GEMINI_API_KEY não definida — /report usará as frases determinísticas do ml-service."
   );
 }
 
-const generateFullReport = new GenerateFullReportUseCase(mlService, insightsService);
+const generateFullReport = new GenerateFullReportUseCase(
+  mlService,
+  insightsService,
+  Boolean(GEMINI_API_KEY)
+);
 
 const app = express();
 app.use(cors());
@@ -44,8 +48,8 @@ app.use("/api", createRoutes(generateFullReport, mlService));
 app.use(errorHandler);
 
 app.listen(PORT, () => {
-  console.log(`🚀 Pixel Oracle — API principal (triangulação ML + RAG + ABSA)`);
+  console.log(`🚀 Pixel Oracle — API principal (dashboard de evidências de reviews)`);
   console.log(`   http://localhost:${PORT}`);
   console.log(`   ML: ${ML_SERVICE_URL}`);
-  console.log(`   Rotas: GET /api/health | POST /api/predict | POST /api/report`);
+  console.log(`   Rotas: GET /api/health | POST /api/report`);
 });

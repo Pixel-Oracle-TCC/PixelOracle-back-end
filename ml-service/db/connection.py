@@ -25,7 +25,7 @@ def get_database_url() -> Optional[str]:
 def init_engine(database_url: Optional[str] = None) -> Optional[Engine]:
     """
     Inicializa o engine global. Retorna None se não houver DATABASE_URL
-    (permite /predict funcionar sem Postgres).
+    (o serviço sobe e /health responde; /analyze devolve 503).
     """
     global _engine, _SessionLocal
     url = database_url or get_database_url()

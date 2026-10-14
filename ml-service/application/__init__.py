@@ -1,10 +1,5 @@
 """Casos de uso da aplicação."""
 
-from application.predict_risk import PredictCommercialRiskUseCase
-from application.registry import ModelNotLoadedError, ModelRegistry
+from application.analyze import AnalyzePitchUseCase, RetrieveSimilarUseCase
 
-__all__ = [
-    "ModelNotLoadedError",
-    "ModelRegistry",
-    "PredictCommercialRiskUseCase",
-]
+__all__ = ["AnalyzePitchUseCase", "RetrieveSimilarUseCase"]

@@ -6,8 +6,11 @@ from models.orm import (
     Game,
     GameGenre,
     Genre,
-    GenreInsight,
+    GenreDriver,
     Review,
+    ReviewAspect,
+    Theme,
+    ThemeStat,
     TriangulationReport,
 )
 
@@ -17,7 +20,10 @@ __all__ = [
     "Game",
     "GameGenre",
     "Genre",
-    "GenreInsight",
+    "GenreDriver",
     "Review",
+    "ReviewAspect",
+    "Theme",
+    "ThemeStat",
     "TriangulationReport",
 ]
