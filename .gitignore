@@ -11,6 +11,9 @@ api/dist/
 frontend/node_modules/
 frontend/dist/
 
+# Dumps do banco (compartilhar por Drive, não pelo git)
+dumps/
+
 # Secrets
 ml-service/.env
 api/.env
