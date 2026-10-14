@@ -1,59 +1,50 @@
 import type { GamePitch } from "../../domain/entities/GamePitch.js";
-import type { FullReport } from "../../domain/entities/FullReport.js";
+import type { DashboardNarrative, FullReport } from "../../domain/entities/FullReport.js";
 import type { IInsightsService } from "../../domain/ports/IInsightsService.js";
 import type { IMlService } from "../../domain/ports/IMlService.js";
+import { buildFallbackNarrative } from "../narrative/fallbackNarrative.js";
+import { validateNarrative } from "../validation/highlightValidator.js";
 
 /**
- * Relatório completo: triangula no ml-service e pede à Gemini apenas a redação.
+ * Relatório completo: o ml-service monta o dashboard de evidências e a Gemini só redige.
  *
  * Ordem importa (decisão de produto/TCC):
- * 1) Evidências estruturadas via /triangulate (RF + RAG + genre_insights)
+ * 1) Evidências estruturadas via /analyze (similares + temas + drivers do RF)
  * 2) Narrativa em português (Gemini ou fallback)
+ * 3) Validador: frase que cita jogo fora dos jogos-exemplo volta para o texto-modelo
  *
- * Se a Gemini falhar, NÃO propagamos 500: devolvemos o dashboard bruto.
+ * Se a Gemini falhar, NÃO propagamos 500: devolvemos as frases determinísticas.
  * Ver vault: [[Por que Gemini so redige]].
  */
 export class GenerateFullReportUseCase {
   constructor(
     private readonly mlService: IMlService,
-    private readonly insightsService: IInsightsService
+    private readonly insightsService: IInsightsService,
+    private readonly usesGemini: boolean
   ) {}
 
   async execute(pitch: GamePitch): Promise<FullReport> {
-    // Análise fundamentada — acontece no ml-service, não no prompt
-    const triangulation = await this.mlService.triangulate(pitch);
+    const analysis = await this.mlService.analyze(pitch);
 
-    let narrativa;
+    let narrativa: DashboardNarrative;
     try {
-      narrativa = await this.insightsService.narrateDashboard(pitch, triangulation);
+      const raw = await this.insightsService.narrateDashboard(pitch, analysis);
+      narrativa = validateNarrative(analysis, raw, this.usesGemini ? "gemini" : "fallback");
     } catch (err) {
-      // Critério de aceite: fallback funcional se Gemini cair (rede, quota, parse)
       const detail = err instanceof Error ? err.message : String(err);
       console.warn(`[report] Gemini indisponível — usando fallback. Motivo: ${detail}`);
-      narrativa = {
-        resumo:
-          "Narrativa Gemini indisponível — exibindo dashboard triangulado bruto.",
-        pontos_fortes: triangulation.dashboard.pontos_fortes.map((p) => p.ponto),
-        pontos_fracos: triangulation.dashboard.pontos_fracos.map((p) => p.ponto),
-        oportunidades: triangulation.dashboard.oportunidades.map((p) => p.ponto),
-        riscos: triangulation.dashboard.riscos.map((p) => p.ponto),
-        fonte: "fallback" as const,
-      };
+      narrativa = validateNarrative(analysis, buildFallbackNarrative(pitch, analysis), "fallback");
     }
 
     return {
       status: "sucesso",
       modo: "pre-lancamento",
-      jogo: {
-        titulo: pitch.titulo,
-        descricao: pitch.descricao,
-      },
-      predicao_ml: triangulation.predicao_ml,
+      jogo: analysis.jogo,
       // Estruturado + evidência (frontend pode renderizar cards sem depender da LLM)
-      dashboard: triangulation.dashboard,
+      dashboard: analysis.dashboard,
       narrativa,
-      evidencias: triangulation.evidencias,
-      aviso: triangulation.aviso,
+      cobertura: analysis.cobertura,
+      evidencias: analysis.evidencias,
     };
   }
 }

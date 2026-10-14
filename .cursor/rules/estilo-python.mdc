@@ -19,7 +19,7 @@ alwaysApply: false
 - Nunca deixe uma chamada a serviço externo (Steam API, SteamSpy, Gemini, banco) sem tratamento explícito de exceção. Toda função que faz I/O externo deve:
   - Capturar falhas de rede/timeout especificamente (não `except Exception` genérico sem re-raise ou log).
   - Logar o erro com contexto suficiente para debug (qual jogo, qual review, qual etapa do pipeline).
-  - Ter um comportamento de fallback definido quando fizer sentido (ex: `/triangulate` deve funcionar mesmo se a Gemini falhar, retornando o objeto de triangulação bruto).
+  - Ter um comportamento de fallback definido quando fizer sentido (ex: `/api/report` deve funcionar mesmo se a Gemini falhar, usando as frases determinísticas do `/analyze`).
 
 ## Scripts offline (coleta, embeddings, ABSA)
 - Scripts que processam grandes volumes (coleta de jogos, geração de embeddings, extração ABSA em lote) devem ser **idempotentes**: rodar de novo não deve duplicar dados. Use `UPSERT`/`ON CONFLICT` no Postgres, ou verificação de existência antes de inserir.

@@ -1,9 +1,9 @@
 /**
- * Integração Gemini — redige dashboard a partir do objeto triangulado.
+ * Integração Gemini — redige o dashboard a partir das evidências já calculadas.
  *
  * Dois adapters da mesma port (IInsightsService):
  * - GeminiService: chama a LLM com prompt restritivo
- * - FallbackInsightsService: copia os "ponto" do dashboard (sem rede)
+ * - FallbackInsightsService: usa as frases determinísticas do ml-service (sem rede)
  *
  * Sem chave no boot (index.ts) → FallbackInsightsService.
  * Ver vault: [[Por que Gemini so redige]] / [[Por que Ports and Adapters]].
@@ -11,11 +11,9 @@
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { GamePitch } from "../domain/entities/GamePitch.js";
-import type {
-  DashboardNarrative,
-  TriangulationResult,
-} from "../domain/entities/FullReport.js";
+import type { AnalysisResult, RawNarrative } from "../domain/entities/FullReport.js";
 import type { IInsightsService } from "../domain/ports/IInsightsService.js";
+import { buildFallbackNarrative } from "../application/narrative/fallbackNarrative.js";
 import { buildDashboardNarrativePrompt } from "../infrastructure/prompts/dashboardNarrativePrompt.js";
 
 export class GeminiService implements IInsightsService {
@@ -23,81 +21,40 @@ export class GeminiService implements IInsightsService {
 
   constructor(apiKey: string, modelName: string) {
     const genAI = new GoogleGenerativeAI(apiKey);
-    this.model = genAI.getGenerativeModel({ model: modelName });
+    this.model = genAI.getGenerativeModel({
+      model: modelName,
+      generationConfig: { responseMimeType: "application/json", temperature: 0.3 },
+    });
   }
 
-  async narrateDashboard(
-    pitch: GamePitch,
-    triangulation: TriangulationResult
-  ): Promise<DashboardNarrative> {
-    const prompt = buildDashboardNarrativePrompt(pitch, triangulation);
+  async narrateDashboard(pitch: GamePitch, analysis: AnalysisResult): Promise<RawNarrative> {
+    const prompt = buildDashboardNarrativePrompt(pitch, analysis);
     const result = await this.model.generateContent(prompt);
-    const text = result.response.text().trim();
-    return parseNarrativeResponse(text);
+    return parseNarrativeResponse(result.response.text().trim());
   }
 }
 
-/** Fallback: expõe os pontos triangulados brutos sem Gemini. */
+/** Fallback: resumo montado a partir dos dados e frases determinísticas do ml-service. */
 export class FallbackInsightsService implements IInsightsService {
-  async narrateDashboard(
-    pitch: GamePitch,
-    triangulation: TriangulationResult
-  ): Promise<DashboardNarrative> {
-    const dash = triangulation.dashboard;
-    const pred = triangulation.predicao_ml as {
-      risco_comercial?: string;
-      chance_sucesso_estimada_pct?: number;
-    };
-
-    return {
-      resumo:
-        `"${pitch.titulo}" — triangulação disponível sem Gemini. ` +
-        `Risco estatístico: ${pred.risco_comercial ?? "n/d"}` +
-        (pred.chance_sucesso_estimada_pct != null
-          ? ` (${pred.chance_sucesso_estimada_pct}% na classe prevista).`
-          : ".") +
-        " Configure GEMINI_API_KEY para narrativa redigida.",
-      pontos_fortes: dash.pontos_fortes.map((p) => p.ponto).slice(0, 5),
-      pontos_fracos: dash.pontos_fracos.map((p) => p.ponto).slice(0, 5),
-      oportunidades: dash.oportunidades.map((p) => p.ponto).slice(0, 5),
-      riscos: dash.riscos.map((p) => p.ponto).slice(0, 5),
-      fonte: "fallback",
-    };
+  async narrateDashboard(pitch: GamePitch, analysis: AnalysisResult): Promise<RawNarrative> {
+    return buildFallbackNarrative(pitch, analysis);
   }
 }
 
 /** Extrai JSON da resposta; se a LLM enrolar com markdown, ainda tentamos recuperar. */
-function parseNarrativeResponse(text: string): DashboardNarrative {
-  try {
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      const parsed = JSON.parse(jsonMatch[0]) as Partial<DashboardNarrative>;
-      if (parsed.resumo) {
-        return {
-          resumo: parsed.resumo,
-          pontos_fortes: asStringArray(parsed.pontos_fortes),
-          pontos_fracos: asStringArray(parsed.pontos_fracos),
-          oportunidades: asStringArray(parsed.oportunidades),
-          riscos: asStringArray(parsed.riscos),
-          fonte: "gemini",
-        };
-      }
-    }
-  } catch {
-    /* fallback texto bruto */
+function parseNarrativeResponse(text: string): RawNarrative {
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) {
+    throw new Error("Resposta da Gemini sem JSON.");
   }
-
-  return {
-    resumo: text.slice(0, 500),
-    pontos_fortes: [],
-    pontos_fracos: [],
-    oportunidades: [],
-    riscos: [],
-    fonte: "gemini",
-  };
-}
-
-function asStringArray(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  return value.map((v) => String(v)).slice(0, 8);
+  const parsed = JSON.parse(jsonMatch[0]) as Partial<RawNarrative>;
+  if (!parsed.resumo) {
+    throw new Error("Resposta da Gemini sem resumo.");
+  }
+  const destaques = Array.isArray(parsed.destaques)
+    ? parsed.destaques
+        .filter((d) => d && typeof d.id === "string" && typeof d.frase === "string")
+        .map((d) => ({ id: d.id, frase: d.frase.trim() }))
+    : [];
+  return { resumo: String(parsed.resumo), destaques };
 }

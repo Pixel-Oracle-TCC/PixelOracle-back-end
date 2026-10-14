@@ -1,53 +1,45 @@
 # Pixel Oracle API
 
-Monorepo do **Pixel Oracle** (TCC): mentoria pré-lançamento para desenvolvedores indie brasileiros.
+Monorepo do **Pixel Oracle** (TCC): mentoria pré-lançamento para desenvolvedores indie.
 
-A partir de um **pitch** (título, descrição, gênero, preço, metadados planejados), o sistema:
+O desenvolvedor descreve o jogo (título, ideia, gêneros) e recebe um **dashboard de evidências
+reais**, extraídas de reviews públicas da Steam de jogos parecidos com o dele:
 
-1. **Estima risco comercial** com Random Forest (sem data leakage de reviews/vendas no input)
-2. **Recupera jogos similares** via embeddings + PostgreSQL/`pgvector` (RAG)
-3. **Triangula evidências** (RF + similares + insights de gênero/ABSA quando disponíveis)
-4. **Redige** o dashboard com Google Gemini (a LLM não analisa do zero — só narra evidências)
+1. **Jogos similares** ao pitch, via embeddings + PostgreSQL/`pgvector`
+2. **Destaques**: elogios e reclamações que se repetem nesses jogos e no gênero, com % de reviews,
+   jogos-exemplo e as citações mais votadas como "útil" (ex.: *"Muitos jogadores valorizam uma
+   história profunda, como em Hollow Knight e Hades…"*)
+3. **Fatores decisivos**: Random Forest que mostra quais temas mais pesam para a review recomendar
+   (ou não) o jogo
+4. **Reviews de referência** de cada jogo similar, incluindo como o desenvolvedor respondeu às críticas
+5. **Redação** pela Google Gemini, que só reescreve o que já foi calculado; um validador descarta frases
+   que citem jogos fora das evidências
+
+> O antigo **score de viabilidade comercial** foi descartado: as vendas da Steam não são públicas e o
+> rótulo dependia de estimativa. O código está em `ml-service/legacy/sales_score/` só como registro.
 
 | Camada | Pasta | Porta | Função |
 |--------|-------|-------|--------|
 | API principal | `api/` | `3000` | REST para o frontend; orquestra ML + Gemini |
-| ML service | `ml-service/` | `8000` | RF, RAG, triangulação, coleta offline |
-| Postgres + pgvector | Docker `db` | `5433`→`5432` | Jogos, embeddings, reviews, `genre_insights` |
+| ML service | `ml-service/` | `8000` | Similares, temas, recorrência, drivers; pipeline offline |
+| Postgres + pgvector | Docker `db` | `5433`→`5432` | Jogos, reviews, aspectos, temas, estatísticas |
 | Frontend | repo separado | — | Consome **só** `http://localhost:3000/api/*` |
 
-**Modo:** pré-lançamento — **não** envie reviews, scores ou vendas reais no body.
+Conformidade: **nenhum dado de autor** é guardado (sem `steamid`, sem perfil). Dedup por
+`recommendationid`. Temas são agregados por gênero/jogo, nunca por pessoa (ToS Steam cláusula 2 + LGPD).
 
-Documentação de produto/arquitetura: vault Obsidian `TCC/` · guia do front: [`FRONTEND_ATUALIZACAO.md`](FRONTEND_ATUALIZACAO.md) · contratos: [`CONTRATOS_API.md`](CONTRATOS_API.md).
+Documentação de produto/arquitetura: vault Obsidian `TCC/` · contratos: [`CONTRATOS_API.md`](CONTRATOS_API.md) · Docker: [`DOCKER.md`](DOCKER.md).
 
 ---
 
 ## Início rápido
 
 ```text
-1. Artefatos RF          →  cd ml-service && python ml/train.py   (se não houver artifacts/)
-2. api/.env              →  GEMINI_API_KEY (opcional; sem chave = narrativa fallback)
-3. Subir stack           →  docker compose up --build -d
-4. (Opcional) popular DB →  bootstrap + embeddings (veja abaixo)
-5. Testar                →  POST http://localhost:3000/api/report
+1. ml-service/.env + api/.env  →  DATABASE_URL, GEMINI_API_KEY (veja Variáveis)
+2. Subir stack                 →  docker compose up --build -d
+3. Popular o banco             →  jogos + embeddings + pipeline de reviews (abaixo)
+4. Testar                      →  POST http://localhost:3000/api/report
 ```
-
----
-
-## Sumário
-
-1. [Arquitetura](#arquitetura)
-2. [Pré-requisitos e instalação](#pré-requisitos-e-instalação)
-3. [Como rodar](#como-rodar)
-4. [Popular o banco (RAG)](#popular-o-banco-rag)
-5. [Treinar o modelo](#treinar-o-modelo)
-6. [Rotas](#rotas)
-7. [Corpo da requisição](#corpo-da-requisição)
-8. [Resposta de `/api/report`](#resposta-de-apireport)
-9. [Variáveis de ambiente](#variáveis-de-ambiente)
-10. [Erros comuns](#erros-comuns)
-11. [Estrutura do código](#estrutura-do-código)
-12. [Repositórios relacionados](#repositórios-relacionados)
 
 ---
 
@@ -55,24 +47,17 @@ Documentação de produto/arquitetura: vault Obsidian `TCC/` · guia do front: [
 
 ```text
   Frontend (Angular)
-        │
-        │  POST /api/report | /api/predict | GET /api/health
+        │  POST /api/report | GET /api/health
         ▼
   api/ :3000  ──►  ml-service/ :8000  ──►  Postgres+pgvector :5433
         │                │
-        │                ├── Random Forest (/predict, parte do /triangulate)
-        │                ├── RAG pgvector (/retrieve-similar)
-        │                └── TriangulationEngine (/triangulate)
-        └── Gemini (redige narrativa a partir do dashboard)
+        │                ├── /retrieve-similar  (pgvector)
+        │                └── /analyze  → TriangulationEngine (dashboard estruturado)
+        └── Gemini (redige) + validador de jogos citados
+
+  Pipeline offline (scripts no host, grava no Postgres):
+  GetAppReviews → ABSA (Gemini) → cluster de temas → recorrência por gênero → RF de drivers
 ```
-
-| URL | Serviço | Quem usa |
-|-----|---------|----------|
-| `http://localhost:3000/api` | API principal | **Frontend e Postman** |
-| `http://localhost:8000` | ML (+ `/docs` Swagger) | Debug interno |
-| `localhost:5433` | Postgres | Scripts offline / `psql` |
-
-> A porta **5433** no host evita conflito com outro Postgres na 5432. Dentro do Compose o ML usa o hostname `db:5432`.
 
 ---
 
@@ -81,112 +66,100 @@ Documentação de produto/arquitetura: vault Obsidian `TCC/` · guia do front: [
 | Ferramenta | Versão | Uso |
 |------------|--------|-----|
 | Docker Desktop | recente | Stack completa (recomendado) |
-| Python | 3.9+ | Treino + scripts offline |
+| Python | 3.9+ | Scripts offline |
 | Node.js | 18+ | API local (`npm run dev`) |
-
-### Python (ml-service)
 
 ```bash
 cd ml-service
 python3 -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-python ml/train.py                 # gera artifacts/*.pkl (não vão no Git)
-```
+cp .env.example .env               # DATABASE_URL, GEMINI_API_KEY
 
-### Node (api)
-
-```bash
-cd api
+cd ../api
 npm install
-cp .env.example .env               # preencha GEMINI_API_KEY
-```
-
-### ml-service/.env (scripts no host)
-
-```bash
-cp ml-service/.env.example ml-service/.env
-# DATABASE_URL=postgresql://pixel:pixel@localhost:5433/pixeloracle
+cp .env.example .env               # GEMINI_API_KEY
 ```
 
 ---
 
 ## Como rodar
 
-Não misture Docker e processos locais nas **mesmas** portas.
-
 ### Opção A — Docker (recomendado)
 
 ```bash
-# na raiz PixelOracle-API/
 docker compose up --build -d
-docker compose ps                  # db, ml, api → healthy
-
+docker compose ps                  # db, ml-service, api → healthy
 curl -s http://localhost:3000/api/health | jq
 ```
 
-Detalhes: [`DOCKER.md`](DOCKER.md).
+Banco criado antes desta versão? Aplique as migrations novas (idempotente):
 
-Primeiro build do `ml-service` baixa Torch CPU (pode demorar alguns minutos). O Dockerfile evita pacotes CUDA.
+```bash
+cd ml-service && source .venv/bin/activate
+python scripts/apply_schema.py
+```
 
 ### Opção B — Local
 
 ```bash
-# Terminal 1 — só o banco
-docker compose up -d db
-
-# Terminal 2 — ML
-cd ml-service && source .venv/bin/activate
-export DATABASE_URL=postgresql://pixel:pixel@localhost:5433/pixeloracle
-uvicorn main:app --reload --port 8000
-
-# Terminal 3 — API
-cd api && npm run dev
+docker compose up -d db                                   # só o banco
+cd ml-service && uvicorn main:app --reload --port 8000    # terminal 2
+cd api && npm run dev                                     # terminal 3
 ```
 
 ---
 
-## Popular o banco (RAG)
+## Popular o banco
 
-Sem dados no Postgres, `/predict` funciona; `/api/report` vem **parcial** (só RF, listas vazias / `aviso`).
+Tudo roda no host, com `ml-service/.env` apontando para `localhost:5433`.
 
 ```bash
 cd ml-service && source .venv/bin/activate
 
-python scripts/bootstrap_games_from_json.py      # ~110 jogos do JSON
-python scripts/enrich_descriptions_from_metadata.py   # texto sintético (se Steam estiver bloqueada)
-# ou, com Steam acessível:
-# python scripts/enrich_game_descriptions.py --reset-embeddings
-
+# 1) Jogos e embeddings (busca de similares)
+python scripts/bootstrap_games_from_json.py
+python scripts/enrich_descriptions_from_metadata.py   # ou enrich_game_descriptions.py com a Store acessível
 python scripts/backfill_embeddings.py
-# python scripts/collect_reviews.py --limit-games 20   # requer Steam Store
+
+# 2) Reviews (GetAppReviews: mais úteis de todos os tempos + recentes; sem dados de autor)
+python scripts/collect_reviews.py                      # retoma de onde parou; --force recoleta
+
+# 3) Aspectos (Gemini): categoria + sentimento + trecho literal + resumo
+python scripts/run_absa.py --limit 500                 # repita até zerar as pendentes
+
+# 4) Temas recorrentes (cluster dos resumos + nome dado pela Gemini)
+python scripts/cluster_themes.py
+
+# 5) Recorrência por gênero (Wilson, qui-quadrado, Benjamini-Hochberg)
+python scripts/compute_theme_stats.py
+
+# 6) Random Forest de drivers de recomendação
+python ml/train_drivers.py
 ```
+
+Os passos 4–6 devem ser rodados juntos (o 4 recria os temas). Métricas de cada execução ficam em
+`experiments/*.json`.
 
 Verificar:
 
 ```bash
-docker compose exec db psql -U pixel -d pixeloracle -c \
-  "SELECT COUNT(*) AS games, COUNT(embedding) AS embeddings FROM games;"
+curl -s http://localhost:8000/health | jq .contagens
 ```
 
-> Em algumas redes (ex.: Wi‑Fi da faculdade) `store.steampowered.com` pode resetar a conexão. Use hotspot/VPN ou as descrições sintéticas acima.
-
----
-
-## Treinar o modelo
-
-| Item | Valor |
-|------|--------|
-| Dataset | `ml-service/data/database_steam_br.json` |
-| Features | Metadados planejáveis (**sem** reviews no X) |
-| Saída | `ml-service/artifacts/*.pkl` |
+### Validação da ABSA (gold standard)
 
 ```bash
-cd ml-service && source .venv/bin/activate
-python ml/train.py
+python scripts/export_gold_standard.py --size 200      # gera experiments/gold_standard/anotador{1,2}.csv
+# dois anotadores preenchem a coluna "anotacao" (ex.: gameplay:positivo; historia:negativo)
+python scripts/evaluate_gold_standard.py               # Kappa entre anotadores + F1 da Gemini
 ```
 
-Manter `INCLUDE_REVIEW_FEATURES=false` no modo pré-lançamento (evita data leakage).
+### Testes sintéticos (sem rede e sem banco)
+
+```bash
+python scripts/test_pipeline.py
+```
 
 ---
 
@@ -196,126 +169,67 @@ Manter `INCLUDE_REVIEW_FEATURES=false` no modo pré-lançamento (evita data leak
 
 | Método | Rota | Descrição |
 |--------|------|-----------|
-| `GET` | `/api/health` | API + ping no ML |
-| `POST` | `/api/predict` | Só Random Forest |
-| `POST` | `/api/report` | **Principal:** triangulação + narrativa Gemini |
+| `GET` | `/api/health` | API + health do ML (com contagens do banco) |
+| `POST` | `/api/report` | **Principal:** dashboard de evidências + narrativa |
 
 ### ML (`:8000`, interno)
 
 | Método | Rota | Descrição |
 |--------|------|-----------|
-| `GET` | `/health` | Status do modelo + `database_configured` |
-| `POST` | `/predict` | RF isolado |
+| `GET` | `/health` | Status + contagens das tabelas |
 | `POST` | `/retrieve-similar` | Top-k jogos similares (pgvector) |
-| `POST` | `/triangulate` | Dashboard estruturado (consumido pelo report) |
+| `POST` | `/analyze` | Dashboard estruturado (consumido pelo report) |
 | — | `/docs` | Swagger |
 
 ---
 
 ## Corpo da requisição
 
-### Obrigatórios
+| Campo | Tipo | Obrigatório | Notas |
+|-------|------|-------------|-------|
+| `titulo` | string | sim | Alias: `name` |
+| `descricao` | string | sim | Mín. 10 chars. Aliases: `ideia`, `description` |
+| `genres` | string[] | sim | Ex.: `"Indie"`, `"Ação"` |
+| `price_brl` | number | não | Preço planejado |
+| `top_k` | number | não | Quantos jogos similares (1–20, padrão 5) |
 
-| Campo | Tipo | Notas |
-|-------|------|--------|
-| `titulo` | string | Alias: `name` |
-| `descricao` | string | Mín. 10 chars. Aliases: `ideia`, `description` |
-| `price_brl` | number | Preço planejado (R$) |
-| `genres` | string[] | Ex.: `"Indie"`, `"Ação"` |
-| `categories` | string[] | Ex.: `"Single-player"`, `"Um jogador"` |
-| `release_year` | number | Ano previsto |
-
-### Opcionais
-
-`platforms`, `supported_languages`, `dlc`, `achievements`, `metacritic` (use `0`), `indie`, `coming_soon`, `singleplayer`, `multiplayer`, `early_access`, `is_free`, `controller_support`, etc.
-
-### Não enviar (erro)
-
-`total_reviews`, `total_positive`, `user_score`, `score_desc`, `multiplicador_boxleiter`, `vendas_estimadas`
-
-### Exemplo
-
-```json
-{
-  "titulo": "Floresta Pixel",
-  "descricao": "Metroidvania 2D com crafting e exploração cooperativa local.",
-  "genres": ["Indie", "Ação", "Aventura"],
-  "categories": ["Single-player"],
-  "price_brl": 36.99,
-  "release_year": 2026,
-  "indie": true,
-  "coming_soon": true
-}
-```
+Campos do formulário antigo (`categories`, `release_year`, flags) são aceitos e ignorados.
 
 ```bash
 curl -s -X POST http://localhost:3000/api/report \
   -H 'Content-Type: application/json' \
-  -d @- <<'EOF'
-{ "titulo":"Floresta Pixel", "descricao":"Metroidvania 2D com crafting e exploração cooperativa local.",
-  "genres":["Indie","Ação","Aventura"], "categories":["Single-player"],
-  "price_brl":36.99, "release_year":2026 }
-EOF
+  -d '{"titulo":"Floresta Pixel","descricao":"Metroidvania 2D com crafting e exploração cooperativa local.","genres":["Indie","Ação","Aventura"]}' | jq
 ```
 
 ---
 
 ## Resposta de `/api/report`
 
-**Breaking change:** não existe mais `insights: { resumo, dicas }`.
+Resumo (contrato completo em [`CONTRATOS_API.md`](CONTRATOS_API.md)):
 
 ```json
 {
   "status": "sucesso",
-  "modo": "pre-lancamento",
-  "jogo": { "titulo": "...", "descricao": "..." },
-  "predicao_ml": {
-    "risco_comercial": "Alto Risco",
-    "chance_sucesso_estimada_pct": 68,
-    "probabilidades": {
-      "Alto Risco": 0.68,
-      "Risco Médio": 0.12,
-      "Baixo Risco (Sucesso)": 0.20
-    }
-  },
+  "jogo": { "titulo": "...", "descricao": "...", "genres": ["Indie"] },
   "dashboard": {
-    "pontos_fortes": [{ "ponto": "...", "evidencia": {} }],
-    "pontos_fracos": [],
-    "oportunidades": [],
-    "riscos": [],
-    "jogos_similares": [],
-    "insights_genero": []
+    "destaques": { "elogios": [], "reclamacoes": [] },
+    "fatores_decisivos": [],
+    "alertas": [],
+    "reviews_referencia": [],
+    "jogos_similares": []
   },
   "narrativa": {
     "resumo": "...",
-    "pontos_fortes": [],
-    "pontos_fracos": [],
-    "oportunidades": [],
-    "riscos": [],
-    "fonte": "gemini"
+    "destaques": [{ "id": "...", "frase": "...", "fonte": "gemini" }],
+    "fonte": "gemini",
+    "validacao": { "frases_substituidas": 0, "motivos": [] }
   },
-  "evidencias": {
-    "fonte_predicao": "random_forest",
-    "fonte_similares": "pgvector_cosine",
-    "fonte_aspectos": "genre_insights_absa"
-  },
-  "aviso": null
+  "cobertura": { "reviews_analisadas_similares": 0, "reviews_analisadas_genero": 0, "temas_disponiveis": 0 }
 }
 ```
 
-- `narrativa.fonte`: `"gemini"` | `"fallback"` (API continua útil se a LLM falhar)
-- `insights_genero` pode ser `[]` até o pipeline ABSA popular o banco
-- Guia completo para o Angular: [`FRONTEND_ATUALIZACAO.md`](FRONTEND_ATUALIZACAO.md)
-
-### Classes de risco (ML)
-
-| Classe | Interpretação |
-|--------|----------------|
-| Baixo Risco (Sucesso) | Melhor faixa no histórico BR usado no treino |
-| Risco Médio | Intermediário |
-| Alto Risco | Faixa mais frágil |
-
-`chance_sucesso_estimada_pct` = % na **classe prevista** (não é “probabilidade de sucesso” absoluta).
+Cada destaque traz `metricas` (prevalência, intervalo de Wilson, jogos distintos, votos úteis,
+p-valor ajustado), `jogos_exemplo` e `citacoes` reais.
 
 ---
 
@@ -330,18 +244,16 @@ GEMINI_API_KEY=
 GEMINI_MODEL=gemini-2.5-flash
 ```
 
-No Docker, `ML_SERVICE_URL` é sobrescrito para `http://ml-service:8000`.
-
 ### `ml-service/.env`
 
 ```env
 DATABASE_URL=postgresql://pixel:pixel@localhost:5433/pixeloracle
-DATA_SOURCE=json
-INCLUDE_REVIEW_FEATURES=false
 EMBEDDING_MODEL=all-MiniLM-L6-v2
+ASPECT_EMBEDDING_MODEL=paraphrase-multilingual-MiniLM-L12-v2
 SIMILAR_GAMES_TOP_K=5
-STEAM_API_KEY=
-GEMINI_API_KEY=
+STEAM_API_KEY=           # opcional (rate limit maior)
+GEMINI_API_KEY=          # ABSA e nomeação de temas
+GEMINI_MODEL=gemini-2.5-flash
 ```
 
 ---
@@ -350,15 +262,13 @@ GEMINI_API_KEY=
 
 | Sintoma | Causa | Solução |
 |--------|-------|---------|
-| Body sem `titulo`/`descricao` | Validação | Inclua os campos |
-| Campos de review rejeitados | Modo pré-lançamento | Remova `user_score`, `total_reviews`, … |
-| `502` / `origem: ml-service` | ML parado | `docker compose up -d ml-service` |
-| `503` modelo | Sem `artifacts/` | `python ml/train.py` |
+| `503` em `/analyze` | Sem `DATABASE_URL` | Configure o Postgres |
+| Alerta `dados_insuficientes` | Pipeline de reviews não rodou | Passos 2–6 de "Popular o banco" |
+| `fonte_similares` sem resultado | Jogos sem embedding | `backfill_embeddings.py` |
+| `relation "themes" does not exist` | Banco antigo | `python scripts/apply_schema.py` |
 | `5432 already in use` | Outro Postgres | Projeto usa **5433** no host |
-| Steam `Connection reset` | Rede bloqueando Store | Hotspot/VPN ou `enrich_descriptions_from_metadata.py` |
-| `fonte: "fallback"` | Sem chave / erro Gemini | Configure `api/.env` e recrie o container `api` |
-| Report lento na 1ª vez | Carga do MiniLM | Timeout 120–180s no cliente |
-| Build Docker puxando CUDA | deps antigas | Dockerfile já força Torch CPU; rebuild `--no-cache ml-service` |
+| `narrativa.fonte: "fallback"` | Sem chave / erro Gemini | `api/.env` + `docker compose up -d --force-recreate api` |
+| Report lento na 1ª vez | Carga do MiniLM | Timeout de 120–180s no cliente |
 
 ---
 
@@ -366,33 +276,30 @@ GEMINI_API_KEY=
 
 ```text
 PixelOracle-API/
-├── api/                         # Express + TypeScript
-│   └── src/
-│       ├── application/         # GenerateFullReportUseCase
-│       ├── domain/              # FullReport, GamePitch, ports
-│       ├── services/            # MlService, GeminiService
-│       ├── presentation/        # rotas, parseGamePitch
-│       └── infrastructure/prompts/
+├── api/src/
+│   ├── application/            # GenerateFullReportUseCase, validador, fallback
+│   ├── domain/                 # FullReport, GamePitch, ports
+│   ├── services/               # MlService, GeminiService
+│   ├── presentation/           # rotas, parseGamePitch
+│   └── infrastructure/prompts/
 ├── ml-service/
-│   ├── presentation/            # FastAPI routes + schemas
-│   ├── application/             # predict, triangulate
-│   ├── triangulation/           # motor do dashboard
-│   ├── embeddings/ + retrieval/ # MiniLM + pgvector
-│   ├── absa/                    # extração / Kappa / F1 / significância
-│   ├── collection/              # Steam / SteamSpy / reviews (sem steamid)
-│   ├── db/ + models/            # SQLAlchemy + schema SQL
-│   ├── ml/                      # train.py, features.py
-│   ├── scripts/                 # bootstrap, embeddings, reviews, …
-│   ├── artifacts/               # .pkl (gitignore)
-│   └── data/database_steam_br.json
+│   ├── presentation/           # FastAPI routes + schemas
+│   ├── application/analyze.py  # orquestra o /analyze
+│   ├── triangulation/          # motor do dashboard
+│   ├── embeddings/ retrieval/  # MiniLM + pgvector + leitura de reviews/temas
+│   ├── collection/             # GetAppReviews (sem dados de autor)
+│   ├── absa/                   # extração, taxonomia, recorrência, Kappa/F1
+│   ├── themes/                 # cluster + nomeação de temas
+│   ├── ml/                     # RF de drivers + log de experimentos
+│   ├── db/ models/             # migrations SQL + SQLAlchemy
+│   ├── scripts/                # pipeline offline e testes
+│   └── legacy/sales_score/     # score de vendas descartado (registro)
+├── experiments/                # métricas de cada execução (JSON)
 ├── CONTRATOS_API.md
-├── FRONTEND_ATUALIZACAO.md
 ├── docker-compose.yml
 ├── DOCKER.md
 └── README.md
 ```
-
-Conformidade: reviews **não** persistem `author.steamid` (ToS Steam + LGPD). Dedup por `recommendationid`.
 
 ---
 
@@ -400,10 +307,10 @@ Conformidade: reviews **não** persistem `author.steamid` (ToS Steam + LGPD). De
 
 | Repositório | Papel |
 |-------------|--------|
-| **PixelOracle-API** (este) | ML, triangulação, API principal, Postgres |
+| **PixelOracle-API** (este) | ML, pipeline de reviews, API principal, Postgres |
 | **Pixel-Oracle-FrontEnd** | UI Angular → ver `docs/FRONTEND_ATUALIZACAO.md` |
 | **PixelOracle-data-base** | Scripts legados de coleta → JSON de jogos |
 
 ---
 
-Projeto acadêmico (TCC) — viabilidade comercial de jogos indie no mercado Steam BR, com mentoria fundamentada (ML + RAG + ABSA).
+Projeto acadêmico (TCC) — mentoria pré-lançamento para jogos indie, fundamentada em reviews reais da Steam.

@@ -10,7 +10,7 @@ O projeto é multi-repo (`pixel-oracle-frontend`, `pixel-oracle-api`, `pixel-ora
 
 ## Regra obrigatória ao alterar um endpoint
 
-Sempre que você criar ou modificar um endpoint em qualquer um dos repositórios (`/predict`, `/retrieve-similar`, `/triangulate` no `ml-service`; `/api/report` ou qualquer rota nova na `api`), você deve:
+Sempre que você criar ou modificar um endpoint em qualquer um dos repositórios (`/retrieve-similar`, `/analyze` no `ml-service`; `/api/report` ou qualquer rota nova na `api`), você deve:
 
 1. **Atualizar o schema formal** do lado que está sendo alterado:
    - `ml-service`: modelo Pydantic correspondente em `schema.py`.
@@ -25,23 +25,23 @@ Sempre que você criar ou modificar um endpoint em qualquer um dos repositórios
 ## Formato de referência para `CONTRATOS_API.md`
 
 ```markdown
-## POST /triangulate (ml-service, consumido por: api principal)
+## POST /analyze (ml-service, consumido por: api principal)
 
 ### Request
 \`\`\`json
-{ "titulo": "string", "descricao": "string", "genero": "string", ... }
+{ "titulo": "string", "descricao": "string", "genres": ["string"] }
 \`\`\`
 
 ### Response
 \`\`\`json
 {
-  "predicao_ml": { "risco": "string", "probabilidade": 0.0 },
-  "dashboard": { "pontos_fortes": [...], "pontos_fracos": [...], ... }
+  "dashboard": { "destaques": { "elogios": [...], "reclamacoes": [...] }, "fatores_decisivos": [...], ... },
+  "cobertura": { ... }
 }
 \`\`\`
 
 ### Histórico de mudanças
-- 2026-XX-XX: campo `jogos_similares` adicionado ao dashboard (retrocompatível).
+- 2026-XX-XX: campo `alertas` adicionado ao dashboard (retrocompatível).
 ```
 
 ## Ao encontrar uma inconsistência existente

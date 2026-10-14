@@ -1,22 +1,10 @@
 import type { GamePitch } from "../../domain/entities/GamePitch.js";
 
 /**
- * Campos pós-lançamento: se entrarem no body, contaminam o contrato pré-lançamento
- * e podem reintroduzir data leakage no caminho do RF. Rejeitamos de propósito.
- */
-const POST_LAUNCH_KEYS = [
-  "total_reviews",
-  "total_positive",
-  "user_score",
-  "score_desc",
-  "multiplicador_boxleiter",
-  "vendas_estimadas",
-] as const;
-
-/**
  * Valida e normaliza o pitch do frontend/dev.
  * Aliases (name, ideia, description) existem para facilitar integração.
- * Defaults assumem indie pré-lançamento (coming_soon=true, metacritic=0, etc.).
+ * Campos do formulário antigo (categories, release_year, flags…) são ignorados:
+ * o dashboard só precisa do texto do pitch e dos gêneros.
  */
 export function parseGamePitch(body: unknown): GamePitch {
   if (!body || typeof body !== "object") {
@@ -24,16 +12,6 @@ export function parseGamePitch(body: unknown): GamePitch {
   }
 
   const b = body as Record<string, unknown>;
-
-  for (const key of POST_LAUNCH_KEYS) {
-    if (b[key] !== undefined) {
-      throw new Error(
-        `Campo "${key}" não é aceito: o jogo ainda não foi lançado na Steam. ` +
-          "Use titulo, descricao e metadados planejados."
-      );
-    }
-  }
-
   const titulo = String(b.titulo ?? b.name ?? "").trim();
   const descricao = String(b.descricao ?? b.ideia ?? b.description ?? "").trim();
 
@@ -46,50 +24,18 @@ export function parseGamePitch(body: unknown): GamePitch {
   if (!Array.isArray(b.genres) || b.genres.length === 0) {
     throw new Error("Campo obrigatório: genres.");
   }
-  if (!Array.isArray(b.categories) || b.categories.length === 0) {
-    throw new Error("Campo obrigatório: categories.");
+  if (b.price_brl !== undefined && (typeof b.price_brl !== "number" || b.price_brl < 0)) {
+    throw new Error("price_brl deve ser um número >= 0.");
   }
-  if (typeof b.price_brl !== "number" || b.price_brl < 0) {
-    throw new Error("Campo obrigatório: price_brl (número >= 0).");
-  }
-  if (typeof b.release_year !== "number") {
-    throw new Error("Campo obrigatório: release_year.");
+  if (b.top_k !== undefined && (typeof b.top_k !== "number" || b.top_k < 1 || b.top_k > 20)) {
+    throw new Error("top_k deve ser um número entre 1 e 20.");
   }
 
   return {
     titulo,
     descricao,
-    price_brl: b.price_brl,
     genres: b.genres.map(String),
-    categories: b.categories.map(String),
-    release_year: b.release_year,
-    period_time: b.period_time != null ? String(b.period_time) : undefined,
-    platforms: num(b.platforms, 1),
-    supported_languages: num(b.supported_languages, 1),
-    dlc: num(b.dlc, 0),
-    achievements: num(b.achievements, 0),
-    // Jogo ainda sem nota — default 0 alinha com treino pré-lançamento
-    metacritic: num(b.metacritic, 0),
-    required_age_num: num(b.required_age_num, 0),
-    singleplayer: bool(b.singleplayer, true),
-    multiplayer: bool(b.multiplayer, false),
-    is_online: bool(b.is_online, false),
-    indie: bool(b.indie, true),
-    early_access: bool(b.early_access, false),
-    trading_cards: bool(b.trading_cards, false),
-    workshop: bool(b.workshop, false),
-    is_free: bool(b.is_free, false),
-    coming_soon: bool(b.coming_soon, true),
-    adult_content: bool(b.adult_content, false),
-    controller_support: String(b.controller_support ?? "none"),
-    type: String(b.type ?? "game"),
+    price_brl: typeof b.price_brl === "number" ? b.price_brl : undefined,
+    top_k: typeof b.top_k === "number" ? b.top_k : undefined,
   };
-}
-
-function num(value: unknown, fallback: number): number {
-  return typeof value === "number" ? value : fallback;
-}
-
-function bool(value: unknown, fallback: boolean): boolean {
-  return typeof value === "boolean" ? value : fallback;
 }

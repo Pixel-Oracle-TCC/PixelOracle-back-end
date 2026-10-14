@@ -1,17 +1,18 @@
-"""Schemas da API — pitch pré-lançamento e respostas de triangulação."""
+"""Schemas da API — pitch do desenvolvedor e busca de similares."""
 
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
 
 class GamePitchInput(BaseModel):
     """
-    Dados que o desenvolvedor informa ANTES do lançamento.
-    Não inclui reviews, notas de usuários nem vendas reais.
+    O que o desenvolvedor informa ANTES do lançamento. Só o necessário para achar
+    jogos parecidos e os gêneros de referência. Campos extras do formulário antigo
+    (categorias, flags, ano…) são ignorados em vez de quebrar o frontend.
     """
 
-    model_config = ConfigDict(populate_by_name=True, extra="forbid")
+    model_config = ConfigDict(populate_by_name=True, extra="ignore")
 
     titulo: str = Field(
         ...,
@@ -27,33 +28,9 @@ class GamePitchInput(BaseModel):
         validation_alias=AliasChoices("descricao", "ideia", "description"),
         description="Descrição da ideia / proposta do jogo",
     )
-
-    price_brl: float = Field(..., ge=0, description="Preço planejado em reais (BRL)")
     genres: List[str] = Field(..., min_length=1)
-    categories: List[str] = Field(..., min_length=1)
-    release_year: int = Field(..., ge=1990, le=2035, description="Ano planejado de lançamento")
-    period_time: Optional[str] = Field(None, description="Opcional; derivado do ano se omitido")
-
-    platforms: int = Field(1, ge=0)
-    supported_languages: int = Field(1, ge=0)
-    dlc: int = Field(0, ge=0)
-    achievements: int = Field(0, ge=0, description="Conquistas planejadas na página Steam")
-    metacritic: int = Field(0, ge=0, description="Use 0 — jogo ainda sem nota Metacritic")
-    required_age_num: float = Field(0, ge=0)
-
-    singleplayer: bool = True
-    multiplayer: bool = False
-    is_online: bool = False
-    indie: bool = True
-    early_access: bool = False
-    trading_cards: bool = False
-    workshop: bool = False
-    is_free: bool = False
-    coming_soon: bool = True
-    adult_content: bool = False
-
-    controller_support: str = "none"
-    type: str = "game"
+    price_brl: Optional[float] = Field(None, ge=0, description="Preço planejado (opcional)")
+    top_k: Optional[int] = Field(None, ge=1, le=20, description="Quantos jogos similares usar")
 
 
 class RetrieveSimilarInput(BaseModel):
@@ -70,26 +47,3 @@ class RetrieveSimilarInput(BaseModel):
     )
     genres: List[str] = Field(..., min_length=1)
     top_k: Optional[int] = Field(None, ge=1, le=50)
-
-
-class DashboardEvidence(BaseModel):
-    model_config = ConfigDict(extra="allow")
-
-    tipo: Optional[str] = None
-
-
-class DashboardPoint(BaseModel):
-    ponto: str
-    evidencia: Dict[str, Any] = Field(default_factory=dict)
-
-
-class TriangulationDashboard(BaseModel):
-    pontos_fortes: List[DashboardPoint] = Field(default_factory=list)
-    pontos_fracos: List[DashboardPoint] = Field(default_factory=list)
-    oportunidades: List[DashboardPoint] = Field(default_factory=list)
-    riscos: List[DashboardPoint] = Field(default_factory=list)
-    jogos_similares: List[Dict[str, Any]] = Field(default_factory=list)
-    insights_genero: List[Dict[str, Any]] = Field(default_factory=list)
-
-
-GameDataInput = GamePitchInput

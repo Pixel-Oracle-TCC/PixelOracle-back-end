@@ -11,7 +11,7 @@ Este projeto depende de conseguir mostrar, no TCC, a **evolução** do sistema p
 ## Quando esta regra se aplica
 
 Qualquer alteração em:
-- Hiperparâmetros ou features do Random Forest (`ml/train.py` ou equivalente).
+- Hiperparâmetros ou features do Random Forest de drivers (`ml/drivers.py` / `ml/train_drivers.py`).
 - Prompt usado na extração ABSA (`absa/extractor.py`).
 - Lógica do motor de triangulação (`triangulation/engine.py`) que afete o resultado final.
 - Modelo de embedding ou parâmetros de busca vetorial (`retrieval/`).
