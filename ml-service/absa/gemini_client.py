@@ -52,7 +52,7 @@ class GeminiJsonClient:
         self.timeout = timeout
         self.max_retries = max_retries
         # Extração não precisa de raciocínio longo: com o padrão do 2.5-flash um lote de
-        # 10 reviews leva ~40s; com 0 cai para poucos segundos. Vazio = padrão do modelo.
+        # 10 reviews leva ~37s; com 0 cai para ~10s. Vazio = padrão do modelo.
         if thinking_budget is None:
             raw = os.getenv("GEMINI_THINKING_BUDGET", "0").strip()
             thinking_budget = int(raw) if raw else None

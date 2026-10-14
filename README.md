@@ -15,13 +15,10 @@ reais**, extraídas de reviews públicas da Steam de jogos parecidos com o dele:
 5. **Redação** pela Google Gemini, que só reescreve o que já foi calculado; um validador descarta frases
    que citem jogos fora das evidências
 
-> O antigo **score de viabilidade comercial** foi descartado: as vendas da Steam não são públicas e o
-> rótulo dependia de estimativa. O código está em `ml-service/legacy/sales_score/` só como registro.
-
 | Camada | Pasta | Porta | Função |
 |--------|-------|-------|--------|
 | API principal | `api/` | `3000` | REST para o frontend; orquestra ML + Gemini |
-| ML service | `ml-service/` | `8000` | Similares, temas, recorrência, drivers; pipeline offline |
+| ML service | `ml-service/` | `8000` | Similares e dashboard; pipeline offline de reviews |
 | Postgres + pgvector | Docker `db` | `5433`→`5432` | Jogos, reviews, aspectos, temas, estatísticas |
 | Frontend | repo separado | — | Consome **só** `http://localhost:3000/api/*` |
 
@@ -35,11 +32,14 @@ Documentação de produto/arquitetura: vault Obsidian `TCC/` · contratos: [`CON
 ## Início rápido
 
 ```text
-1. ml-service/.env + api/.env  →  DATABASE_URL, GEMINI_API_KEY (veja Variáveis)
-2. Subir stack                 →  docker compose up --build -d
-3. Popular o banco             →  jogos + embeddings + pipeline de reviews (abaixo)
-4. Testar                      →  POST http://localhost:3000/api/report
+1. Instalar dependências      →  venv do ml-service + npm install na api
+2. Configurar .env            →  ml-service/.env e api/.env (seção Variáveis)
+3. Subir a stack              →  docker compose up --build -d
+4. Popular o banco            →  jogos + embeddings + pipeline de reviews
+5. Testar                     →  POST http://localhost:3000/api/report
 ```
+
+Sem o passo 4 a API responde, mas o dashboard vem vazio com o alerta `dados_insuficientes`.
 
 ---
 
@@ -61,39 +61,76 @@ Documentação de produto/arquitetura: vault Obsidian `TCC/` · contratos: [`CON
 
 ---
 
-## Pré-requisitos e instalação
+## 1. Pré-requisitos e instalação
 
 | Ferramenta | Versão | Uso |
 |------------|--------|-----|
-| Docker Desktop | recente | Stack completa (recomendado) |
-| Python | 3.9+ | Scripts offline |
+| Docker Desktop | recente | Banco e stack completa |
+| Python | 3.9+ | ml-service e scripts offline |
 | Node.js | 18+ | API local (`npm run dev`) |
+| Chave Gemini | [Google AI Studio](https://aistudio.google.com/apikey) | ABSA, nome dos temas, narrativa |
+| Chave Steam (opcional) | [Steam Web API](https://steamcommunity.com/dev/apikey) | Coleta de reviews com rate limit maior |
+
+> **zsh (padrão no macOS):** os blocos abaixo têm linhas de comentário com `#`. Para colá-los direto no
+> terminal, rode uma vez `echo 'setopt interactivecomments' >> ~/.zshrc && source ~/.zshrc` (sem isso, o
+> zsh trata `#` como argumento e o comando falha).
+
+No Windows, ative o venv com `.venv\Scripts\Activate.ps1` em vez de `source`.
 
 ```bash
 cd ml-service
 python3 -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\Activate.ps1
+source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env               # DATABASE_URL, GEMINI_API_KEY
+cp .env.example .env
 
 cd ../api
 npm install
-cp .env.example .env               # GEMINI_API_KEY
+cp .env.example .env
 ```
 
----
+## 2. Variáveis de ambiente
 
-## Como rodar
+### `ml-service/.env` (scripts no host e container do ML)
+
+```env
+DATABASE_URL=postgresql://pixel:pixel@localhost:5433/pixeloracle
+EMBEDDING_MODEL=all-MiniLM-L6-v2
+ASPECT_EMBEDDING_MODEL=paraphrase-multilingual-MiniLM-L12-v2
+SIMILAR_GAMES_TOP_K=5
+STEAM_API_KEY=                # opcional
+GEMINI_API_KEY=               # ABSA e nomeação de temas
+GEMINI_MODEL=gemini-2.5-flash
+GEMINI_THINKING_BUDGET=0      # 0 = sem raciocínio (lote de 10 reviews: ~10 s vs ~37 s)
+# EXPERIMENTS_DIR=            # padrão: <repo>/experiments
+```
+
+No Docker, o `DATABASE_URL` é sobrescrito pelo compose para `db:5432`.
+
+### `api/.env`
+
+```env
+PORT=3000
+ML_SERVICE_URL=http://localhost:8000   # no Docker o compose usa http://ml-service:8000
+GEMINI_API_KEY=                        # sem chave: narrativa automática (fallback)
+GEMINI_MODEL=gemini-2.5-flash
+```
+
+> **Cota gratuita da Gemini:** 20 requisições por dia **por modelo**. O ABSA manda lotes de 10 reviews,
+> então rende ~200 reviews/dia por modelo. Se a API e o ml-service usarem a mesma chave e o mesmo
+> modelo, dividem essa cota. Quando ela acaba, `run_absa.py` para sozinho e grava o parcial.
+
+## 3. Subir a stack
 
 ### Opção A — Docker (recomendado)
 
 ```bash
 docker compose up --build -d
-docker compose ps                  # db, ml-service, api → healthy
+docker compose ps
 curl -s http://localhost:3000/api/health | jq
 ```
 
-Banco criado antes desta versão? Aplique as migrations novas (idempotente):
+Os três serviços (`db`, `ml-service`, `api`) devem aparecer como `healthy`. Volume do banco já existia? Aplique as migrations (idempotente):
 
 ```bash
 cd ml-service && source .venv/bin/activate
@@ -102,31 +139,41 @@ python scripts/apply_schema.py
 
 ### Opção B — Local
 
+Um comando por terminal, nesta ordem (banco, ml-service, API):
+
 ```bash
-docker compose up -d db                                   # só o banco
-cd ml-service && uvicorn main:app --reload --port 8000    # terminal 2
-cd api && npm run dev                                     # terminal 3
+docker compose up -d db
 ```
 
----
+```bash
+cd ml-service && source .venv/bin/activate && uvicorn main:app --reload --port 8000
+```
 
-## Popular o banco
+```bash
+cd api && npm run dev
+```
 
-Tudo roda no host, com `ml-service/.env` apontando para `localhost:5433`.
+## 4. Popular o banco
+
+Tudo roda no host, com `ml-service/.env` apontando para `localhost:5433`. Todos os scripts são
+idempotentes e retomam de onde pararam.
 
 ```bash
 cd ml-service && source .venv/bin/activate
 
 # 1) Jogos e embeddings (busca de similares)
+# Com a Store acessível, enrich_game_descriptions.py substitui o enrich_descriptions_from_metadata.py
 python scripts/bootstrap_games_from_json.py
-python scripts/enrich_descriptions_from_metadata.py   # ou enrich_game_descriptions.py com a Store acessível
+python scripts/enrich_descriptions_from_metadata.py
 python scripts/backfill_embeddings.py
 
-# 2) Reviews (GetAppReviews: mais úteis de todos os tempos + recentes; sem dados de autor)
-python scripts/collect_reviews.py                      # retoma de onde parou; --force recoleta
+# 2) Reviews: mais úteis de todos os tempos (positivas e negativas) + recentes, PT-BR e inglês
+# --limit-games 0 = todos os jogos; --force recoleta
+python scripts/collect_reviews.py --limit-games 20
 
-# 3) Aspectos (Gemini): categoria + sentimento + trecho literal + resumo
-python scripts/run_absa.py --limit 500                 # repita até zerar as pendentes
+# 3) Aspectos via Gemini: categoria + sentimento + trecho literal + resumo
+# Repita (diariamente, no free tier) até zerar as pendentes
+python scripts/run_absa.py --limit 200
 
 # 4) Temas recorrentes (cluster dos resumos + nome dado pela Gemini)
 python scripts/cluster_themes.py
@@ -138,8 +185,7 @@ python scripts/compute_theme_stats.py
 python ml/train_drivers.py
 ```
 
-Os passos 4–6 devem ser rodados juntos (o 4 recria os temas). Métricas de cada execução ficam em
-`experiments/*.json`.
+Rode os passos 4–6 juntos: o 4 recria os temas. Métricas de cada execução ficam em `experiments/*.json`.
 
 Verificar:
 
@@ -147,18 +193,54 @@ Verificar:
 curl -s http://localhost:8000/health | jq .contagens
 ```
 
-### Validação da ABSA (gold standard)
+### Compartilhar os dados com o grupo
+
+Quem já populou o banco exporta; os demais restauram e pulam a seção acima inteira (inclusive a cota da Gemini).
+
+**Quem tem os dados** (com o banco rodando) gera `dumps/pixeloracle_<data>.dump`; com `--csv`, também
+gera `dumps/csv_<data>/`, com um CSV por tabela (sem os vetores) para abrir em planilha:
 
 ```bash
-python scripts/export_gold_standard.py --size 200      # gera experiments/gold_standard/anotador{1,2}.csv
-# dois anotadores preenchem a coluna "anotacao" (ex.: gameplay:positivo; historia:negativo)
-python scripts/evaluate_gold_standard.py               # Kappa entre anotadores + F1 da Gemini
+./scripts/db-export.sh --csv
 ```
 
-### Testes sintéticos (sem rede e sem banco)
+**Quem recebe** coloca o `.dump` em `dumps/` e restaura. O script sobe o banco se precisar e **substitui**
+o banco local. Reinicie o ml-service só se a stack já estava no ar:
 
 ```bash
-python scripts/test_pipeline.py
+./scripts/db-import.sh dumps/pixeloracle_20261014_2042.dump
+docker compose restart ml-service
+```
+
+Compartilhe o `.dump` pelo Drive do grupo: a pasta `dumps/` fica fora do git. O dump não tem chaves
+de API nem dados de autor de reviews.
+
+### Validação da ABSA (gold standard)
+
+O export gera `experiments/gold_standard/anotador1.csv` e `anotador2.csv`. Dois anotadores preenchem a
+coluna `anotacao` (ex.: `gameplay:positivo; historia:negativo`), e o evaluate calcula o Kappa entre eles
+e o F1 da Gemini:
+
+```bash
+python scripts/export_gold_standard.py --size 200
+python scripts/evaluate_gold_standard.py
+```
+
+### Testes
+
+São 11 testes sintéticos do ml-service (sem rede e sem banco) e a checagem de tipos da API:
+
+```bash
+cd ml-service && python scripts/test_pipeline.py
+cd ../api && npx tsc --noEmit
+```
+
+## 5. Testar o relatório
+
+```bash
+curl -s -X POST http://localhost:3000/api/report \
+  -H 'Content-Type: application/json' \
+  -d '{"titulo":"Floresta Pixel","descricao":"Metroidvania 2D com crafting e exploração cooperativa local.","genres":["Indie","Ação","Aventura"]}' | jq
 ```
 
 ---
@@ -181,9 +263,7 @@ python scripts/test_pipeline.py
 | `POST` | `/analyze` | Dashboard estruturado (consumido pelo report) |
 | — | `/docs` | Swagger |
 
----
-
-## Corpo da requisição
+### Corpo da requisição
 
 | Campo | Tipo | Obrigatório | Notas |
 |-------|------|-------------|-------|
@@ -193,17 +273,9 @@ python scripts/test_pipeline.py
 | `price_brl` | number | não | Preço planejado |
 | `top_k` | number | não | Quantos jogos similares (1–20, padrão 5) |
 
-Campos do formulário antigo (`categories`, `release_year`, flags) são aceitos e ignorados.
+Campos extras são ignorados.
 
-```bash
-curl -s -X POST http://localhost:3000/api/report \
-  -H 'Content-Type: application/json' \
-  -d '{"titulo":"Floresta Pixel","descricao":"Metroidvania 2D com crafting e exploração cooperativa local.","genres":["Indie","Ação","Aventura"]}' | jq
-```
-
----
-
-## Resposta de `/api/report`
+### Resposta de `/api/report`
 
 Resumo (contrato completo em [`CONTRATOS_API.md`](CONTRATOS_API.md)):
 
@@ -233,42 +305,20 @@ p-valor ajustado), `jogos_exemplo` e `citacoes` reais.
 
 ---
 
-## Variáveis de ambiente
-
-### `api/.env`
-
-```env
-PORT=3000
-ML_SERVICE_URL=http://localhost:8000
-GEMINI_API_KEY=
-GEMINI_MODEL=gemini-2.5-flash
-```
-
-### `ml-service/.env`
-
-```env
-DATABASE_URL=postgresql://pixel:pixel@localhost:5433/pixeloracle
-EMBEDDING_MODEL=all-MiniLM-L6-v2
-ASPECT_EMBEDDING_MODEL=paraphrase-multilingual-MiniLM-L12-v2
-SIMILAR_GAMES_TOP_K=5
-STEAM_API_KEY=           # opcional (rate limit maior)
-GEMINI_API_KEY=          # ABSA e nomeação de temas
-GEMINI_MODEL=gemini-2.5-flash
-```
-
----
-
 ## Erros comuns
 
 | Sintoma | Causa | Solução |
 |--------|-------|---------|
-| `503` em `/analyze` | Sem `DATABASE_URL` | Configure o Postgres |
-| Alerta `dados_insuficientes` | Pipeline de reviews não rodou | Passos 2–6 de "Popular o banco" |
-| `fonte_similares` sem resultado | Jogos sem embedding | `backfill_embeddings.py` |
-| `relation "themes" does not exist` | Banco antigo | `python scripts/apply_schema.py` |
-| `5432 already in use` | Outro Postgres | Projeto usa **5433** no host |
-| `narrativa.fonte: "fallback"` | Sem chave / erro Gemini | `api/.env` + `docker compose up -d --force-recreate api` |
-| Report lento na 1ª vez | Carga do MiniLM | Timeout de 120–180s no cliente |
+| `Cannot connect to the Docker daemon` | Docker Desktop fechado | Abra o Docker Desktop |
+| `503` em `/analyze` | Sem banco | `docker compose up -d db` e confira `DATABASE_URL` |
+| Alerta `dados_insuficientes` | Pipeline de reviews não rodou | Seção "Popular o banco", passos 2–6 |
+| Similares vazios | Jogos sem embedding | `backfill_embeddings.py` |
+| `relation "themes" does not exist` | Banco sem as migrations novas | `python scripts/apply_schema.py` |
+| `5432 already in use` | Outro Postgres | O projeto usa **5433** no host |
+| `Cota diária da Gemini esgotada` | Free tier (20 req/dia/modelo) | Continue no dia seguinte ou troque `GEMINI_MODEL` |
+| `Gemini HTTP 503` repetido | Servidor da Gemini sobrecarregado | O cliente já tenta de novo; lote que falha fica pendente |
+| `narrativa.fonte: "fallback"` | Sem chave ou erro/cota da Gemini | `api/.env` + `docker compose up -d --force-recreate api` |
+| Report lento na 1ª vez | Carga do modelo de embedding | Timeout de 120–180 s no cliente |
 
 ---
 
@@ -288,12 +338,12 @@ PixelOracle-API/
 │   ├── triangulation/          # motor do dashboard
 │   ├── embeddings/ retrieval/  # MiniLM + pgvector + leitura de reviews/temas
 │   ├── collection/             # GetAppReviews (sem dados de autor)
-│   ├── absa/                   # extração, taxonomia, recorrência, Kappa/F1
+│   ├── absa/                   # Gemini, taxonomia, extração, recorrência, Kappa/F1
 │   ├── themes/                 # cluster + nomeação de temas
 │   ├── ml/                     # RF de drivers + log de experimentos
 │   ├── db/ models/             # migrations SQL + SQLAlchemy
-│   ├── scripts/                # pipeline offline e testes
-│   └── legacy/sales_score/     # score de vendas descartado (registro)
+│   └── scripts/                # pipeline offline e testes
+├── scripts/                    # db-export.sh / db-import.sh (compartilhar o banco), docker-up.sh
 ├── experiments/                # métricas de cada execução (JSON)
 ├── CONTRATOS_API.md
 ├── docker-compose.yml
@@ -308,8 +358,8 @@ PixelOracle-API/
 | Repositório | Papel |
 |-------------|--------|
 | **PixelOracle-API** (este) | ML, pipeline de reviews, API principal, Postgres |
-| **Pixel-Oracle-FrontEnd** | UI Angular → ver `docs/FRONTEND_ATUALIZACAO.md` |
-| **PixelOracle-data-base** | Scripts legados de coleta → JSON de jogos |
+| **Pixel-Oracle-FrontEnd** | UI Angular — especificação v3 no vault: `arquitetura/Guia de Atualizacao do Frontend.md` |
+| **PixelOracle-data-base** | Scripts de coleta → JSON de jogos usado no seed |
 
 ---
 

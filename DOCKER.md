@@ -1,7 +1,7 @@
 # Docker — Pixel Oracle
 
 Sobe **Postgres+pgvector**, **ML** (`:8000`) e **API principal** (`:3000`) com um comando.
-Não há mais modelo `.pkl` para gerar antes: o RF de drivers roda offline e grava no banco.
+O conteúdo do dashboard vem do pipeline offline de reviews, que grava no banco (ver [README](README.md)).
 
 ## Pré-requisitos
 
@@ -43,6 +43,8 @@ python scripts/apply_schema.py
 Siga a seção **Popular o banco** do [README](README.md): jogos + embeddings, depois o pipeline de reviews
 (`collect_reviews` → `run_absa` → `cluster_themes` → `compute_theme_stats` → `ml/train_drivers.py`).
 
+Recebeu um dump do grupo? Pule o pipeline: `./scripts/db-import.sh dumps/pixeloracle_<data>.dump`.
+
 ### 4. Testar
 
 | URL | Serviço |
@@ -82,5 +84,6 @@ docker compose up -d --force-recreate api
 | `relation "themes" does not exist` | Volume antigo: `python scripts/apply_schema.py` |
 | Build lento / CUDA | Dockerfile usa Torch CPU; rebuild `--no-cache ml-service` |
 | API não sobe | Espere o ML healthy; `docker compose logs api` |
-| Gemini fallback | Chave em `api/.env` + `force-recreate api` |
+| Gemini fallback | Chave em `api/.env` + `force-recreate api`; ou cota diária esgotada (20 req/dia/modelo no free tier) |
+| `Cannot connect to the Docker daemon` | Abra o Docker Desktop |
 | Dashboard vazio | Pipeline de reviews ainda não rodou (alerta `dados_insuficientes`) |
