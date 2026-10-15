@@ -34,21 +34,6 @@ def cohen_kappa(labels_a: Sequence[str], labels_b: Sequence[str]) -> float:
     return (po - pe) / (1.0 - pe)
 
 
-def f1_score(y_true: Sequence[str], y_pred: Sequence[str], *, average: str = "macro") -> float:
-    """F1 multiclasse single-label (macro ou micro), sem sklearn no caminho crítico."""
-    if len(y_true) != len(y_pred) or not y_true:
-        raise ValueError("y_true e y_pred devem ter o mesmo comprimento > 0.")
-    if average == "micro":
-        return sum(1 for t, p in zip(y_true, y_pred) if t == p) / len(y_true)
-    f1s: List[float] = []
-    for label in sorted(set(y_true) | set(y_pred)):
-        tp = sum(1 for t, p in zip(y_true, y_pred) if t == label and p == label)
-        fp = sum(1 for t, p in zip(y_true, y_pred) if t != label and p == label)
-        fn = sum(1 for t, p in zip(y_true, y_pred) if t == label and p != label)
-        f1s.append(_f1(tp, fp, fn))
-    return sum(f1s) / len(f1s) if f1s else 0.0
-
-
 def to_pairs(annotation: Iterable[Mapping[str, str]]) -> Set[Pair]:
     return {
         (normalize_category(a.get("categoria", "")), normalize_sentiment(a.get("sentimento", "")))

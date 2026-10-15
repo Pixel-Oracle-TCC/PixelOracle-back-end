@@ -2,7 +2,7 @@
 
 Conformidade: nenhuma tabela possui steamid / identificação de autor.
 Deduplicação de reviews por recommendationid.
-Schema: db/migrations/001_schema.sql + 002_reviews_focus.sql.
+Schema: db/migrations/001_schema.sql + 002_reviews_focus.sql + 003_ranking_popularidade.sql + 004_remove_estimativa_vendas.sql + 005_remove_tabelas_sem_uso.sql.
 """
 
 from __future__ import annotations
@@ -39,7 +39,8 @@ class Game(Base):
     descricao: Mapped[Optional[str]] = mapped_column(Text)
     preco_brl: Mapped[Optional[float]] = mapped_column(Numeric)
     release_year: Mapped[Optional[int]] = mapped_column(Integer)
-    owners_estimados: Mapped[Optional[int]] = mapped_column(Integer)
+    # Posição no ranking de mais vendidos da Steam (top sellers semanal somado; 1 = mais vendido)
+    rank_popularidade: Mapped[Optional[int]] = mapped_column(Integer)
     raw_metadata: Mapped[Optional[dict]] = mapped_column(JSONB)
     embedding: Mapped[Optional[Any]] = mapped_column(Vector(384))
     # query_summary da Steam: agregados públicos, não estimativas
@@ -54,6 +55,17 @@ class Game(Base):
         "Genre", secondary="game_genres", back_populates="games"
     )
     reviews: Mapped[List["Review"]] = relationship("Review", back_populates="game")
+
+
+class AppIgnorado(Base):
+    """App do ranking que não entra no catálogo (software, DLC, fora da Store BR)."""
+
+    __tablename__ = "apps_ignorados"
+
+    steam_appid: Mapped[int] = mapped_column(Integer, primary_key=True)
+    titulo: Mapped[Optional[str]] = mapped_column(Text)
+    motivo: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class Genre(Base):
@@ -211,15 +223,6 @@ class GenreDriver(Base):
     modelo_roc_auc: Mapped[Optional[float]] = mapped_column(Numeric)
     n_amostras: Mapped[Optional[int]] = mapped_column(Integer)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-
-
-class TriangulationReport(Base):
-    __tablename__ = "triangulation_reports"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    projeto_pitch: Mapped[Optional[dict]] = mapped_column(JSONB)
-    resultado: Mapped[Optional[dict]] = mapped_column(JSONB)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class AbsaGoldStandard(Base):

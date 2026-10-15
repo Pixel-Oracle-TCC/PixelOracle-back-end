@@ -25,6 +25,7 @@ from absa.significance import (  # noqa: E402
     wilson_interval,
 )
 from absa.validation import cohen_kappa, multilabel_f1, multilabel_kappa, parse_annotation  # noqa: E402
+from collection.catalog import genre_names, rank_top_sellers, rejection_reason  # noqa: E402
 from collection.reviews_client import ReviewsClient  # noqa: E402
 from ml.drivers import build_driver_matrix, train_drivers  # noqa: E402
 from themes.clustering import NOISE, cluster_embeddings  # noqa: E402
@@ -48,6 +49,36 @@ def test_sanitize_review_drops_author_identity() -> None:
     assert clean["weighted_vote_score"] == 0.8
     assert clean["developer_response"] == "Obrigado!"
     assert ReviewsClient.sanitize_review({"review": "sem id"}, tipo_amostra="recente") is None
+
+
+def test_catalog_filters_software_and_canonicalizes_genres() -> None:
+    jogo = {
+        "type": "game",
+        "genres": [
+            {"id": "1", "description": "Ação"},
+            {"id": "18", "description": "Esportes"},
+            {"id": "73", "description": "Violento"},
+        ],
+    }
+    assert rejection_reason(jogo) is None
+    assert genre_names(jogo) == ["Ação", "Desporto"]
+    wallpaper = {"type": "game", "genres": [{"id": "4"}, {"id": "57", "description": "Utilitários"}]}
+    assert rejection_reason(wallpaper) == "software"
+    assert rejection_reason({"type": "dlc", "genres": []}) == "tipo dlc"
+    assert rejection_reason(None) == "sem página na Store BR"
+
+
+def test_top_sellers_rewards_consistency() -> None:
+    def week(*appids):
+        return [{"rank": i, "appid": a, "item": {"name": str(a), "type": 0}} for i, a in enumerate(appids, 1)]
+
+    dlc = {"rank": 1, "appid": 99, "item": {"name": "DLC", "type": 4}}
+    # 10 é 1º só numa semana (pico de lançamento); 20 fica em 2º nas três
+    weeks = [week(10, 20), week(30, 20), [dlc] + week(40, 20)[1:]]
+    ranking = rank_top_sellers(weeks)
+    assert [s.appid for s in ranking][0] == 20
+    assert ranking[0].semanas == 3 and ranking[0].pontos == 3 * 99
+    assert 99 not in {s.appid for s in ranking}
 
 
 def test_literal_excerpt_check() -> None:

@@ -1,1 +1,1 @@
-"""Clientes de coleta Steam / SteamSpy / reviews."""
+"""Clientes de coleta Steam (metadados, top sellers, reviews)."""

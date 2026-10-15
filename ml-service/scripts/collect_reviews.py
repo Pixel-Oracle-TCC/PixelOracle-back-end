@@ -4,6 +4,7 @@ Script offline: coleta reviews para jogos já no banco.
 Conformidade: sanitiza e nunca persiste steamid; UPSERT por recommendationid.
 Retomada: jogos com games.reviews_collected_at preenchido são pulados (use --force para
 recoletar). Funciona como o "checkpoint por appid" da metodologia, sem banco extra.
+Ordem: rank_popularidade (mais vendidos primeiro); jogos fora do ranking ficam por último.
 """
 
 from __future__ import annotations
@@ -58,7 +59,11 @@ def main() -> None:
     client = ReviewsClient(api_key=os.getenv("STEAM_API_KEY") or None)
     session = session_scope()
     try:
-        query = session.query(Game).filter(Game.steam_appid.isnot(None)).order_by(Game.id)
+        query = (
+            session.query(Game)
+            .filter(Game.steam_appid.isnot(None))
+            .order_by(Game.rank_popularidade.asc().nulls_last(), Game.id)
+        )
         if not args.force:
             query = query.filter(Game.reviews_collected_at.is_(None))
         if args.limit_games:

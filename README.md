@@ -162,9 +162,11 @@ idempotentes e retomam de onde pararam.
 cd ml-service && source .venv/bin/activate
 
 # 1) Jogos e embeddings (busca de similares)
-# Com a Store acessível, enrich_game_descriptions.py substitui o enrich_descriptions_from_metadata.py
+# Base legada (110 jogos) + catálogo na ordem dos mais vendidos (top sellers oficial da Steam).
+# Rode o collect_top_games.py de novo com outro --limit para continuar descendo o ranking.
 python scripts/bootstrap_games_from_json.py
 python scripts/enrich_descriptions_from_metadata.py
+python scripts/collect_top_games.py --limit 100
 python scripts/backfill_embeddings.py
 
 # 2) Reviews: mais úteis de todos os tempos (positivas e negativas) + recentes, PT-BR e inglês
@@ -186,6 +188,17 @@ python ml/train_drivers.py
 ```
 
 Rode os passos 4–6 juntos: o 4 recria os temas. Métricas de cada execução ficam em `experiments/*.json`.
+
+**Catálogo pelos mais vendidos.** `collect_top_games.py` usa só a API oficial da Steam
+(`IStoreTopSellersService/GetWeeklyTopSellers`, o top 100 por receita de cada semana no Brasil). As
+últimas `--weeks` semanas (padrão 52, o último ano, com cerca de 650 jogos distintos) viram um ranking
+só. Cada semana dá 100 pontos ao 1º lugar e 1 ao 100º, o que premia quem vende bem o ano todo, não só
+no lançamento. Cada jogo novo é completado com o `appdetails` da Store BR.
+
+Softwares, DLCs e apps sem página no Brasil vão para `apps_ignorados`, para não serem consultados de
+novo. O script retoma de onde parou, e o `collect_reviews.py` segue a mesma ordem. A Store aceita cerca
+de 200 consultas a cada 5 minutos, então 100 jogos novos levam uns 4 minutos. Use `--weeks 520` para
+um ranking de 10 anos e `--skip-free` para deixar os gratuitos de fora.
 
 Verificar:
 

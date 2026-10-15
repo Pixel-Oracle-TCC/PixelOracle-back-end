@@ -2,17 +2,20 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 import requests
 
 logger = logging.getLogger(__name__)
 
 STEAM_STORE_APPDETAILS = "https://store.steampowered.com/api/appdetails"
-STEAM_GET_APP_LIST = "https://api.steampowered.com/ISteamApps/GetAppList/v2/"
+STEAM_WEEKLY_TOP_SELLERS = (
+    "https://api.steampowered.com/IStoreTopSellersService/GetWeeklyTopSellers/v1/"
+)
 
 # Store bloqueia User-Agent padrão do requests com ConnectionReset
 DEFAULT_HEADERS = {
@@ -26,7 +29,7 @@ DEFAULT_HEADERS = {
 
 
 class SteamClient:
-    """Consome GetAppList e appdetails. Escopo: dados de jogos, não de perfis."""
+    """Consome top sellers e appdetails. Escopo: dados de jogos, não de perfis."""
 
     def __init__(
         self,
@@ -42,15 +45,33 @@ class SteamClient:
         self._session = requests.Session()
         self._session.headers.update(DEFAULT_HEADERS)
 
-    def get_app_list(self) -> List[Dict[str, Any]]:
-        """Lista appid + name de todos os apps Steam (pode ser grande)."""
+    def get_weekly_top_sellers(
+        self, start_date: Optional[int] = None, country: str = "BR", language: str = "brazilian"
+    ) -> Dict[str, Any]:
+        """
+        Top 100 por receita da semana iniciada em `start_date` (unix; None = semana atual).
+        Retorna {"start_date": int, "ranks": [{"rank", "appid", "item": {...}}, ...]}.
+        A API entrega no máximo 100 posições por semana; o histórico vai até 2016.
+        """
+        payload: Dict[str, Any] = {
+            "country_code": country,
+            "context": {"language": language, "country_code": country},
+            "page_start": 0,
+            "page_count": 100,
+        }
+        if start_date is not None:
+            payload["start_date"] = int(start_date)
+        params: Dict[str, Any] = {"input_json": json.dumps(payload)}
+        if self.api_key:
+            params["key"] = self.api_key
         try:
-            response = self._session.get(STEAM_GET_APP_LIST, timeout=self.timeout)
+            response = self._session.get(
+                STEAM_WEEKLY_TOP_SELLERS, params=params, timeout=self.timeout
+            )
             response.raise_for_status()
-            payload = response.json()
-            return payload.get("applist", {}).get("apps", [])
-        except requests.RequestException as exc:
-            logger.error("Falha GetAppList: %s", exc)
+            return response.json().get("response") or {}
+        except (requests.RequestException, ValueError) as exc:
+            logger.error("Falha GetWeeklyTopSellers start_date=%s: %s", start_date, exc)
             raise
 
     def get_app_details(
@@ -75,6 +96,15 @@ class SteamClient:
             except (requests.RequestException, ValueError) as exc:
                 last_exc = exc
                 wait = self.sleep_seconds * attempt
+                status = getattr(getattr(exc, "response", None), "status_code", None)
+                if status == 429:
+                    # Store: ~200 appdetails a cada 5 min por IP
+                    wait = 60.0 * attempt
+                elif isinstance(exc, requests.ConnectionError):
+                    # Rajadas levam a Store a derrubar a conexão; a sessão reaproveitada continua bloqueada
+                    wait = 20.0 * attempt
+                    self._session = requests.Session()
+                    self._session.headers.update(DEFAULT_HEADERS)
                 logger.warning(
                     "appdetails appid=%s tentativa %s/%s falhou: %s — retry em %.1fs",
                     appid,

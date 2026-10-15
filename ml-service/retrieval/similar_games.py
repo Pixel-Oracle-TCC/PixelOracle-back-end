@@ -51,7 +51,6 @@ class SimilarGamesRetriever:
                 descricao,
                 preco_brl,
                 release_year,
-                owners_estimados,
                 total_positive,
                 total_reviews_steam,
                 review_score_desc,
@@ -83,7 +82,6 @@ class SimilarGamesRetriever:
                     "descricao": (row["descricao"] or "")[:500],
                     "preco_brl": float(row["preco_brl"]) if row["preco_brl"] is not None else None,
                     "release_year": row["release_year"],
-                    "owners_estimados": row["owners_estimados"],
                     # Avaliação real da Steam (query_summary), não estimativa
                     "review_score_desc": row["review_score_desc"],
                     "total_reviews_steam": total,
