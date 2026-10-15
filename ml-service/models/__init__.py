@@ -11,7 +11,6 @@ from models.orm import (
     ReviewAspect,
     Theme,
     ThemeStat,
-    TriangulationReport,
 )
 
 __all__ = [
@@ -25,5 +24,4 @@ __all__ = [
     "ReviewAspect",
     "Theme",
     "ThemeStat",
-    "TriangulationReport",
 ]

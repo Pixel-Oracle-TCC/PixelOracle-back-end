@@ -3,8 +3,7 @@
 Pergunta respondida: dentro de um gênero, quais temas (elogios/reclamações) mais pesam
 para a review recomendar ou não o jogo?
 
-- y = voted_up da própria review (rótulo REAL da Steam — ao contrário das vendas estimadas
-  do modelo descartado, ver legacy/sales_score).
+- y = voted_up da própria review (rótulo REAL da Steam, sem estimativa).
 - X = presença de cada tema na review + contexto (faixa de horas jogadas, early access).
 - A importância vem de permutation_importance no hold-out (ROC-AUC), não do
   feature_importances_ por impureza, que favorece features com muitos valores.

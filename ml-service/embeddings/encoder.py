@@ -17,7 +17,6 @@ logger = logging.getLogger(__name__)
 DEFAULT_MODEL = "all-MiniLM-L6-v2"
 # Resumos de aspecto são em português: modelo multilíngue, também com 384 dims
 DEFAULT_ASPECT_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"
-EMBEDDING_DIM = 384
 
 
 class EmbeddingEncoder:

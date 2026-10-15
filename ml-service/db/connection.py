@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 import os
-from functools import lru_cache
-from typing import Generator, Optional
+from typing import Optional
 
 from dotenv import load_dotenv
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -46,22 +45,6 @@ def get_engine() -> Optional[Engine]:
     return _engine
 
 
-def get_session() -> Generator[Session, None, None]:
-    """Dependency-style generator de sessão."""
-    if _SessionLocal is None:
-        init_engine()
-    if _SessionLocal is None:
-        raise RuntimeError(
-            "DATABASE_URL não configurada. Configure Postgres + pgvector para "
-            "endpoints de retrieval/triangulação."
-        )
-    session = _SessionLocal()
-    try:
-        yield session
-    finally:
-        session.close()
-
-
 def session_scope() -> Session:
     """Abre uma sessão (caller deve fechar ou usar context)."""
     if _SessionLocal is None:
@@ -69,14 +52,3 @@ def session_scope() -> Session:
     if _SessionLocal is None:
         raise RuntimeError("DATABASE_URL não configurada.")
     return _SessionLocal()
-
-
-@lru_cache(maxsize=1)
-def ensure_extension() -> bool:
-    """Garante CREATE EXTENSION vector (idempotente)."""
-    engine = get_engine()
-    if engine is None:
-        return False
-    with engine.begin() as conn:
-        conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
-    return True

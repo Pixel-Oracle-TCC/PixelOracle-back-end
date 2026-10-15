@@ -58,7 +58,6 @@ Sempre responde 200 (o healthcheck do Docker não pode cair por banco vazio).
       "descricao": "string",
       "preco_brl": 29.9,
       "release_year": 2020,
-      "owners_estimados": 100000,
       "review_score_desc": "Very Positive",
       "total_reviews_steam": 1008,
       "pct_positivas": 0.9048,
@@ -70,6 +69,7 @@ Sempre responde 200 (o healthcheck do Docker não pode cair por banco vazio).
 ```
 
 ### Histórico de mudanças
+- 2026-10-14: removido `owners_estimados` (estimativa de vendas pelo método Boxleiter, sem base empírica). Afeta também `jogos_similares` do `/analyze` e do `/api/report`.
 - 2026-10-14: `review_score_desc`, `total_reviews_steam` e `pct_positivas` (query_summary real da Steam; `null` se o jogo ainda não teve reviews coletadas).
 - 2026-09-10: endpoint criado (RAG via pgvector).
 
