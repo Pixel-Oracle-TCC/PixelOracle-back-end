@@ -55,7 +55,7 @@ if $WITH_CSV; then
   CSV_DIR="${OUT_DIR}/csv_${STAMP}"
   mkdir -p "$CSV_DIR"
   echo "🧾 CSVs → $CSV_DIR"
-  for table in games genres game_genres reviews review_aspects themes theme_stats genre_drivers absa_gold_standard apps_ignorados; do
+  for table in games genres game_genres categories game_categories developers game_developers publishers game_publishers languages game_languages reviews review_aspects review_snapshots themes theme_stats genre_drivers absa_gold_standard apps_ignorados; do
     cols="$(psql_exec -c "
       SELECT string_agg(quote_ident(column_name), ', ' ORDER BY ordinal_position)
       FROM information_schema.columns

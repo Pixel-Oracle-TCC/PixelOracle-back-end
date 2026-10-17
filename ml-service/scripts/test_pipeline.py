@@ -25,8 +25,18 @@ from absa.significance import (  # noqa: E402
     wilson_interval,
 )
 from absa.validation import cohen_kappa, multilabel_f1, multilabel_kappa, parse_annotation  # noqa: E402
-from collection.catalog import genre_names, rank_top_sellers, rejection_reason  # noqa: E402
-from collection.reviews_client import ReviewsClient  # noqa: E402
+from collection.catalog import (  # noqa: E402
+    genre_names,
+    parse_release_date,
+    parse_supported_languages,
+    rank_top_sellers,
+    rejection_reason,
+)
+from collection.reviews_client import (  # noqa: E402
+    ReviewsClient,
+    is_usable_review_text,
+    normalize_review_text,
+)
 from ml.drivers import build_driver_matrix, train_drivers  # noqa: E402
 from themes.clustering import NOISE, cluster_embeddings  # noqa: E402
 from triangulation.engine import TriangulationEngine  # noqa: E402
@@ -40,15 +50,24 @@ def test_sanitize_review_drops_author_identity() -> None:
         "votes_up": 10,
         "weighted_vote_score": "0.8",
         "developer_response": "Obrigado!",
+        "received_for_free": False,
         "author": {"steamid": "7656119", "playtime_at_review": 300, "num_games_owned": 50},
     }
-    clean = ReviewsClient.sanitize_review(raw, tipo_amostra="recente")
+    clean = ReviewsClient.sanitize_review(raw, fatia="proporcional")
     assert clean is not None
     assert "author" not in clean and "steamid" not in str(clean)
     assert clean["playtime_at_review"] == 300
     assert clean["weighted_vote_score"] == 0.8
     assert clean["developer_response"] == "Obrigado!"
-    assert ReviewsClient.sanitize_review({"review": "sem id"}, tipo_amostra="recente") is None
+    assert clean["fatias"] == ["proporcional"]
+    assert ReviewsClient.sanitize_review({"review": "sem id"}, fatia="proporcional") is None
+
+
+def test_quality_filter_rejects_junk() -> None:
+    assert is_usable_review_text("The combat feels amazing and the story is deep.")
+    assert not is_usable_review_text("lol")
+    assert not is_usable_review_text("!!!!!!!!!!??????????")
+    assert normalize_review_text("  Hello   World  ") == "hello world"
 
 
 def test_catalog_filters_software_and_canonicalizes_genres() -> None:
@@ -66,6 +85,17 @@ def test_catalog_filters_software_and_canonicalizes_genres() -> None:
     assert rejection_reason(wallpaper) == "software"
     assert rejection_reason({"type": "dlc", "genres": []}) == "tipo dlc"
     assert rejection_reason(None) == "sem página na Store BR"
+
+
+def test_parse_release_date_and_languages() -> None:
+    from datetime import date
+
+    assert parse_release_date({"release_date": {"date": "24/fev./2022"}}) == date(2022, 2, 24)
+    assert parse_release_date({"release_date": {"date": "Feb 24, 2022"}}) == date(2022, 2, 24)
+    langs = parse_supported_languages(
+        {"supported_languages": "Inglês<strong>*</strong>, Português (Brasil), Japonês"}
+    )
+    assert langs == ["Inglês", "Português (Brasil)", "Japonês"]
 
 
 def test_top_sellers_rewards_consistency() -> None:

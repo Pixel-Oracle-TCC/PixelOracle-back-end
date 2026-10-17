@@ -5,8 +5,10 @@ Escopo: dados de jogo (top sellers + appdetails da Steam), nunca de usuário.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
-from typing import Any, Dict, Iterable, List, Optional
+from datetime import date
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 TOP_SELLERS_PER_WEEK = 100
 # item.type do top sellers: 4 = DLC; o resto é decidido pelo appdetails
@@ -33,6 +35,35 @@ CANONICAL_GENRE_NAMES = {
     "70": "Acesso Antecipado",
 }
 
+_MONTHS_PT = {
+    "jan": 1,
+    "fev": 2,
+    "mar": 3,
+    "abr": 4,
+    "mai": 5,
+    "jun": 6,
+    "jul": 7,
+    "ago": 8,
+    "set": 9,
+    "out": 10,
+    "nov": 11,
+    "dez": 12,
+}
+_MONTHS_EN = {
+    "jan": 1,
+    "feb": 2,
+    "mar": 3,
+    "apr": 4,
+    "may": 5,
+    "jun": 6,
+    "jul": 7,
+    "aug": 8,
+    "sep": 9,
+    "oct": 10,
+    "nov": 11,
+    "dec": 12,
+}
+
 
 def rejection_reason(data: Optional[Dict[str, Any]]) -> Optional[str]:
     """Motivo para o app não entrar no catálogo, ou None se é um jogo."""
@@ -56,6 +87,92 @@ def genre_names(data: Dict[str, Any]) -> List[str]:
         name = CANONICAL_GENRE_NAMES.get(genre_id) or (genre.get("description") or "").strip()
         if name and name not in names:
             names.append(name)
+    return names
+
+
+def category_pairs(data: Dict[str, Any]) -> List[Tuple[int, str]]:
+    """Lista (steam_category_id, nome) das categorias do appdetails."""
+    pairs: List[Tuple[int, str]] = []
+    seen: set[int] = set()
+    for cat in data.get("categories") or []:
+        try:
+            cid = int(cat["id"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if cid in seen:
+            continue
+        nome = (cat.get("description") or "").strip() or str(cid)
+        pairs.append((cid, nome))
+        seen.add(cid)
+    return pairs
+
+
+def name_list(data: Dict[str, Any], key: str) -> List[str]:
+    raw = data.get(key) or []
+    if not isinstance(raw, list):
+        return []
+    names: List[str] = []
+    for item in raw:
+        nome = str(item).strip()
+        if nome and nome not in names:
+            names.append(nome)
+    return names
+
+
+def parse_release_date(data: Dict[str, Any]) -> Optional[date]:
+    """Parseia release_date.date da Store (pt: 24/fev./2022 ou en: Feb 24, 2022)."""
+    date_str = ((data.get("release_date") or {}).get("date") or "").strip()
+    if not date_str:
+        return None
+    # 24/fev./2022 | 24 fev 2022 | 24 Feb, 2022
+    m = re.search(
+        r"(?P<d>\d{1,2})\s*[/\s]\s*(?P<mon>[A-Za-zçÇ.]{3,})\s*[/\s,]+\s*(?P<y>20\d{2})",
+        date_str,
+        flags=re.IGNORECASE,
+    )
+    if m:
+        mon = m.group("mon").lower().replace(".", "")[:3]
+        month = _MONTHS_PT.get(mon) or _MONTHS_EN.get(mon)
+        if month:
+            try:
+                return date(int(m.group("y")), month, int(m.group("d")))
+            except ValueError:
+                return None
+    # Feb 24, 2022
+    m = re.search(
+        r"(?P<mon>[A-Za-z]{3,})\s+(?P<d>\d{1,2}),?\s+(?P<y>20\d{2})",
+        date_str,
+        flags=re.IGNORECASE,
+    )
+    if m:
+        mon = m.group("mon").lower()[:3]
+        month = _MONTHS_EN.get(mon) or _MONTHS_PT.get(mon)
+        if month:
+            try:
+                return date(int(m.group("y")), month, int(m.group("d")))
+            except ValueError:
+                return None
+    # só o ano
+    years = re.findall(r"20\d{2}", date_str)
+    if years:
+        try:
+            return date(int(years[-1]), 1, 1)
+        except ValueError:
+            return None
+    return None
+
+
+def parse_supported_languages(data: Dict[str, Any]) -> List[str]:
+    """Remove HTML e '*' (áudio) da string supported_languages da Store."""
+    raw = data.get("supported_languages") or ""
+    if isinstance(raw, list):
+        return [str(x).strip() for x in raw if str(x).strip()]
+    text = re.sub(r"<[^>]+>", ",", str(raw))
+    names: List[str] = []
+    for part in text.split(","):
+        nome = part.replace("*", "").strip()
+        if nome and nome not in names:
+            names.append(nome)
     return names
 
 
