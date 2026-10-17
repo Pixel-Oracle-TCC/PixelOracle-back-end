@@ -5,10 +5,12 @@ Conformidade (obrigatória — ToS Steam Cláusula 2 + LGPD):
 - Deduplica por recommendationid (nunca por steamid).
 - Persona de público = agregação por GÊNERO/tema, não por indivíduo.
 
-O endpoint store.steampowered.com/appreviews está depreciado; usamos GetAppReviews e só
-caímos no legado se o novo falhar (ex.: mudança de rota ou bloqueio).
-A Steam NÃO expõe awards na API — relevância vem de votes_up + weighted_vote_score.
-Não fazer scraping do HTML da loja para obter awards (risco de ToS).
+Fatias: uma review pode pertencer a várias (`fatias TEXT[]`). Não há dedup entre
+fatias — se uma review recente também é útil, fica em ambas. Métricas usam só
+`proporcional`; úteis servem para citações.
+
+A fatia proporcional usa filter=recent (últimas semanas), não a vida inteira do
+jogo — documentado no TCC / vault.
 
 Ver vault: [[Conformidade Steam e LGPD]] / [[Coleta de Reviews]].
 """
@@ -17,9 +19,11 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import time
+from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Literal, Optional, Sequence
+from typing import Any, Dict, List, Literal, Optional, Sequence, Set
 
 import requests
 
@@ -28,7 +32,6 @@ logger = logging.getLogger(__name__)
 GET_APP_REVIEWS_URL = "https://api.steampowered.com/IUserReviewsService/GetAppReviews/v1/"
 LEGACY_APPREVIEWS_URL = "https://store.steampowered.com/appreviews/{appid}"
 
-# Enums de IUserReviewsService
 FILTER_HELPFUL = 0
 FILTER_RECENT = 1
 REVIEW_TYPE_ALL = 0
@@ -43,17 +46,25 @@ _LEGACY_REVIEW_TYPE = {
     REVIEW_TYPE_NEGATIVE: "negative",
 }
 
-SampleType = Literal["util_positiva", "util_negativa", "recente"]
+SampleType = Literal["util_positiva", "util_negativa", "proporcional"]
+FATIA_PROPORCIONAL = "proporcional"
+FATIAS_UTEIS = frozenset({"util_positiva", "util_negativa"})
 
 DEFAULT_LANGUAGES = ("brazilian", "english")
 MAX_TEXT_CHARS = 4000
+MIN_TEXT_CHARS = 20
+
+# Defaults: proporcional por idioma (PT+EN ≈ 100); úteis menores (citações)
+DEFAULT_PROPORTIONAL_PER_LANGUAGE = 50
+DEFAULT_HELPFUL_POSITIVE = 25
+DEFAULT_HELPFUL_NEGATIVE = 25
 
 
 @dataclass
 class GameReviewSample:
     reviews: List[Dict[str, Any]] = field(default_factory=list)
-    # query_summary: total_positive, total_negative, total_reviews, review_score_desc
     summary: Dict[str, Any] = field(default_factory=dict)
+    summary_unfiltered: Dict[str, Any] = field(default_factory=dict)
 
 
 class ReviewsClient:
@@ -69,7 +80,6 @@ class ReviewsClient:
     ) -> None:
         self.api_key = api_key or None
         self.timeout = timeout
-        # Sleep explícito entre páginas: respeita o rate limit compartilhado sem chave
         self.sleep_seconds = sleep_seconds
         self.max_retries = max_retries
         self._use_legacy = False
@@ -83,93 +93,156 @@ class ReviewsClient:
             }
         )
 
+    def fetch_summary(
+        self, appid: int, *, filter_offtopic_activity: Optional[bool] = None
+    ) -> Dict[str, Any]:
+        """Só query_summary (num_per_page=0). Usado no enrich/select e no snapshot dual."""
+        input_json: Dict[str, Any] = {
+            "appid": int(appid),
+            "filter": FILTER_RECENT,
+            "review_type": REVIEW_TYPE_ALL,
+            "purchase_type": PURCHASE_TYPE_ALL,
+            "languages": ["all"],
+            "cursor": "*",
+            "num_per_page": 0,
+        }
+        if filter_offtopic_activity is not None:
+            input_json["filter_offtopic_activity"] = bool(filter_offtopic_activity)
+        params: Dict[str, Any] = {"input_json": json.dumps(input_json)}
+        if self.api_key:
+            params["key"] = self.api_key
+        try:
+            data = self._get_with_retry(GET_APP_REVIEWS_URL, params)
+            payload = data.get("response", data)
+            return self._extract_summary(payload.get("query_summary") or {})
+        except Exception:  # noqa: BLE001 — fallback legado
+            params_legacy: Dict[str, Any] = {
+                "json": 1,
+                "filter": "all",
+                "language": "all",
+                "num_per_page": 0,
+                "purchase_type": "all",
+            }
+            if filter_offtopic_activity is not None:
+                params_legacy["filter_offtopic_activity"] = int(bool(filter_offtopic_activity))
+            data = self._get_with_retry(LEGACY_APPREVIEWS_URL.format(appid=appid), params_legacy)
+            return self._extract_summary(data.get("query_summary") or {})
+
     def collect_sample(
         self,
         appid: int,
         *,
-        helpful_positive: int = 40,
-        helpful_negative: int = 40,
-        recent: int = 20,
+        helpful_positive: int = DEFAULT_HELPFUL_POSITIVE,
+        helpful_negative: int = DEFAULT_HELPFUL_NEGATIVE,
+        proportional_per_language: int = DEFAULT_PROPORTIONAL_PER_LANGUAGE,
         languages: Sequence[str] = DEFAULT_LANGUAGES,
     ) -> GameReviewSample:
         """
-        Três fatias por jogo:
-        - mais úteis positivas e negativas de todos os tempos (Helpful, day_range=0,
-          use_review_quality=true → a Steam já rebaixa memes, ASCII art e off-topic);
-        - recentes (estado atual do jogo). A 1ª página dela traz o query_summary.
+        Fatias por jogo (limites contam só após filtro de qualidade):
+        - proporcional: recentes sem filtro de tipo, **por idioma** (default 50×2);
+        - util_positiva / util_negativa: mais úteis de todos os tempos (default 25 cada).
 
-        Fatias positivas/negativas separadas: sem isso a amostra fica dominada pela
-        polaridade majoritária do jogo e as reclamações somem.
+        Sem dedup entre fatias: a mesma review pode entrar em várias; `fatias` acumula.
         """
         sample = GameReviewSample()
-        seen: set[str] = set()
+        by_rid: Dict[str, Dict[str, Any]] = {}
+        # near-dup por fatia+idioma: texto normalizado
+        seen_norm: Dict[str, Set[str]] = defaultdict(set)
 
-        slices = [
-            ("recente", FILTER_RECENT, REVIEW_TYPE_ALL, recent),
-            ("util_positiva", FILTER_HELPFUL, REVIEW_TYPE_POSITIVE, helpful_positive),
-            ("util_negativa", FILTER_HELPFUL, REVIEW_TYPE_NEGATIVE, helpful_negative),
-        ]
-        for tipo, filter_value, review_type, limit in slices:
-            if limit <= 0 and review_type != REVIEW_TYPE_ALL:
-                continue
-            raw_reviews, summary = self._collect_slice(
+        sample.summary = self.fetch_summary(appid, filter_offtopic_activity=True)
+        sample.summary_unfiltered = self.fetch_summary(appid, filter_offtopic_activity=False)
+
+        # Proporcional por idioma (confirma: o limite é POR idioma, não no total)
+        for lang in languages:
+            self._fill_slice(
+                by_rid,
+                seen_norm,
                 appid,
-                filter_value=filter_value,
+                tipo=FATIA_PROPORCIONAL,
+                filter_value=FILTER_RECENT,
+                review_type=REVIEW_TYPE_ALL,
+                limit=proportional_per_language,
+                languages=(lang,),
+            )
+
+        for tipo, review_type, limit in (
+            ("util_positiva", REVIEW_TYPE_POSITIVE, helpful_positive),
+            ("util_negativa", REVIEW_TYPE_NEGATIVE, helpful_negative),
+        ):
+            if limit <= 0:
+                continue
+            self._fill_slice(
+                by_rid,
+                seen_norm,
+                appid,
+                tipo=tipo,  # type: ignore[arg-type]
+                filter_value=FILTER_HELPFUL,
                 review_type=review_type,
-                limit=max(limit, 1),
+                limit=limit,
                 languages=languages,
             )
-            if summary and not sample.summary:
-                sample.summary = summary
-            taken = 0
-            for raw in raw_reviews:
-                if taken >= limit:
-                    break
-                sanitized = self.sanitize_review(raw, tipo_amostra=tipo)  # type: ignore[arg-type]
-                if sanitized is None:
-                    continue
-                rid = sanitized["recommendationid"]
-                # Dedup entre fatias (a mesma review pode ser útil e recente)
-                if rid in seen:
-                    continue
-                if languages and sanitized["language"] not in languages:
-                    continue
-                seen.add(rid)
-                sample.reviews.append(sanitized)
-                taken += 1
+
+        sample.reviews = list(by_rid.values())
         return sample
 
-    def _collect_slice(
+    def _fill_slice(
         self,
+        by_rid: Dict[str, Dict[str, Any]],
+        seen_norm: Dict[str, Set[str]],
         appid: int,
         *,
+        tipo: SampleType,
         filter_value: int,
         review_type: int,
         limit: int,
         languages: Sequence[str],
-        max_pages: int = 10,
-    ) -> tuple[List[Dict[str, Any]], Dict[str, Any]]:
-        collected: List[Dict[str, Any]] = []
-        summary: Dict[str, Any] = {}
+        max_pages: int = 20,
+    ) -> None:
+        if limit <= 0:
+            return
+        taken = 0
         cursor = "*"
-        for page in range(max_pages):
+        for _page in range(max_pages):
+            if taken >= limit:
+                break
             payload = self.fetch_page(
                 appid,
                 filter_value=filter_value,
                 review_type=review_type,
                 languages=languages,
                 cursor=cursor,
-                num_per_page=min(100, max(limit - len(collected), 20)),
+                num_per_page=min(100, max(limit - taken, 20)),
             )
-            if page == 0:
-                summary = self._extract_summary(payload.get("query_summary") or {})
             reviews = payload.get("reviews") or []
-            collected.extend(reviews)
+            if not reviews:
+                break
+            for raw in reviews:
+                if taken >= limit:
+                    break
+                sanitized = self.sanitize_review(raw, fatia=tipo)
+                if sanitized is None:
+                    continue
+                if languages and sanitized["language"] not in languages:
+                    continue
+                if not is_usable_review_text(sanitized["texto"]):
+                    continue
+                norm = normalize_review_text(sanitized["texto"])
+                dup_key = f"{tipo}:{sanitized.get('language') or ''}"
+                if norm in seen_norm[dup_key]:
+                    continue
+                rid = sanitized["recommendationid"]
+                if rid in by_rid:
+                    fatias = by_rid[rid]["fatias"]
+                    if tipo not in fatias:
+                        fatias.append(tipo)
+                else:
+                    by_rid[rid] = sanitized
+                seen_norm[dup_key].add(norm)
+                taken += 1
             next_cursor = payload.get("cursor")
-            if not reviews or not next_cursor or next_cursor == cursor or len(collected) >= limit:
+            if not next_cursor or next_cursor == cursor:
                 break
             cursor = next_cursor
-        return collected, summary
 
     def fetch_page(
         self,
@@ -216,14 +289,12 @@ class ReviewsClient:
             "num_per_page": num_per_page,
         }
         if filter_value == FILTER_HELPFUL:
-            # day_range=0 → sem limite: "mais úteis de todos os tempos"
             input_json["day_range"] = 0
             input_json["use_review_quality"] = True
         params: Dict[str, Any] = {"input_json": json.dumps(input_json)}
         if self.api_key:
             params["key"] = self.api_key
         data = self._get_with_retry(GET_APP_REVIEWS_URL, params)
-        # Interfaces de serviço embrulham a resposta em {"response": {...}}
         return data.get("response", data)
 
     def _fetch_legacy(
@@ -240,7 +311,6 @@ class ReviewsClient:
             "review_type": _LEGACY_REVIEW_TYPE[review_type],
             "purchase_type": "all",
             "num_per_page": num_per_page,
-            # Legado só aceita um idioma; filtramos por idioma depois, em collect_sample
             "language": "all",
             "cursor": cursor,
         }
@@ -271,29 +341,29 @@ class ReviewsClient:
 
     @staticmethod
     def _extract_summary(raw: Dict[str, Any]) -> Dict[str, Any]:
-        keys = ("total_positive", "total_negative", "total_reviews", "review_score_desc")
+        keys = (
+            "total_positive",
+            "total_negative",
+            "total_reviews",
+            "review_score",
+            "review_score_desc",
+        )
         return {k: raw[k] for k in keys if k in raw}
 
     @staticmethod
     def sanitize_review(
-        raw: Dict[str, Any], *, tipo_amostra: SampleType
+        raw: Dict[str, Any], *, fatia: SampleType
     ) -> Optional[Dict[str, Any]]:
         """
         Extrai campos permitidos e DESCARTA author (incl. steamid).
 
-        IMPORTANTE PARA O SQUAD:
-        - A resposta da Steam traz `author.steamid`. Só lemos playtime_at_review
-          em memória; o dict de saída NUNCA inclui steamid/author.
-        - developer_response é texto público do estúdio, não dado pessoal do jogador.
-        - Sem recommendationid → descarta (não dá para deduplicar com segurança).
+        Saída inclui `fatias` (lista com a fatia atual). O caller une fatias no UPSERT.
         """
         recommendationid = raw.get("recommendationid")
         if not recommendationid:
             return None
 
         author = raw.get("author") or {}
-        # NÃO fazer: return {..., "author": raw["author"]}
-        # NÃO fazer: author.get("steamid")
         return {
             "recommendationid": str(recommendationid),
             "texto": (raw.get("review") or "")[:MAX_TEXT_CHARS],
@@ -307,10 +377,34 @@ class ReviewsClient:
             "timestamp_created": _as_int(raw.get("timestamp_created")) or None,
             "early_access": bool(raw.get("written_during_early_access")),
             "steam_purchase": bool(raw.get("steam_purchase")),
+            "received_for_free": bool(raw.get("received_for_free")),
             "developer_response": raw.get("developer_response") or None,
             "timestamp_dev_responded": _as_int(raw.get("timestamp_dev_responded")) or None,
-            "tipo_amostra": tipo_amostra,
+            "fatias": [fatia],
         }
+
+
+def is_usable_review_text(texto: Optional[str]) -> bool:
+    """Descarta lixo antes de contar a cota da fatia (<20 chars, só pontuação, ASCII art)."""
+    if not texto:
+        return False
+    t = texto.strip()
+    if len(t) < MIN_TEXT_CHARS:
+        return False
+    alnum = sum(1 for c in t if c.isalnum())
+    if alnum < 12:
+        return False
+    # ASCII art / spam de símbolos: poucos caracteres de palavra
+    letters = sum(1 for c in t if c.isalpha())
+    if letters < 10:
+        return False
+    if letters / max(len(t), 1) < 0.35:
+        return False
+    return True
+
+
+def normalize_review_text(texto: str) -> str:
+    return re.sub(r"\s+", " ", (texto or "").strip().lower())
 
 
 def _as_int(value: Any) -> int:
@@ -321,7 +415,6 @@ def _as_int(value: Any) -> int:
 
 
 def _as_float(value: Any) -> Optional[float]:
-    # No legado weighted_vote_score vem como string
     try:
         return float(value) if value is not None else None
     except (TypeError, ValueError):

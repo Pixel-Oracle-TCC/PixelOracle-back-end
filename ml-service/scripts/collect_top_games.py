@@ -33,14 +33,15 @@ load_dotenv(ML_ROOT / ".env")
 from collection.catalog import (  # noqa: E402
     TopSeller,
     catalog_metadata,
-    genre_names,
+    parse_release_date,
     rank_top_sellers,
     rejection_reason,
     short_description,
 )
+from collection.game_links import link_from_appdetails  # noqa: E402
 from collection.steam_client import SteamClient  # noqa: E402
 from db.connection import init_engine, session_scope  # noqa: E402
-from models.orm import AppIgnorado, Game, GameGenre, Genre  # noqa: E402
+from models.orm import AppIgnorado, Game  # noqa: E402
 
 WEEK_SECONDS = 7 * 24 * 3600
 
@@ -76,25 +77,15 @@ def fetch_weeks(client: SteamClient, weeks: int, country: str) -> tuple[List[Lis
     return all_ranks, periodo
 
 
-def link_genres(session, game_id: int, names: List[str]) -> None:
-    for nome in names:
-        genre = session.query(Genre).filter_by(nome=nome).one_or_none()
-        if genre is None:
-            genre = Genre(nome=nome)
-            session.add(genre)
-            session.flush()
-        exists = session.query(GameGenre).filter_by(game_id=game_id, genre_id=genre.id).one_or_none()
-        if exists is None:
-            session.add(GameGenre(game_id=game_id, genre_id=genre.id))
-
-
 def insert_game(session, rank: int, seller: TopSeller, data: Dict[str, Any], periodo: Dict[str, Any]) -> int:
+    release = parse_release_date(data)
     values = dict(
         steam_appid=seller.appid,
         titulo=data.get("name") or seller.name,
         descricao=short_description(data),
         preco_brl=SteamClient.extract_price_brl(data),
-        release_year=SteamClient.extract_release_year(data),
+        release_year=release.year if release else SteamClient.extract_release_year(data),
+        release_date=release,
         rank_popularidade=rank,
         raw_metadata=catalog_metadata(seller, data, periodo),
     )
@@ -104,7 +95,7 @@ def insert_game(session, rank: int, seller: TopSeller, data: Dict[str, Any], per
         set_={k: getattr(stmt.excluded, k) for k in values if k != "steam_appid"},
     ).returning(Game.id)
     game_id = session.execute(stmt).scalar_one()
-    link_genres(session, game_id, genre_names(data))
+    link_from_appdetails(session, game_id, data)
     return game_id
 
 

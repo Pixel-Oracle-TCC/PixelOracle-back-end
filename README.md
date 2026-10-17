@@ -161,49 +161,50 @@ idempotentes e retomam de onde pararam.
 ```bash
 cd ml-service && source .venv/bin/activate
 
-# 1) Jogos e embeddings (busca de similares)
-# Base legada (110 jogos) + catálogo na ordem dos mais vendidos (top sellers oficial da Steam).
-# Rode o collect_top_games.py de novo com outro --limit para continuar descendo o ranking.
+# 0) Schema (já roda no 1º docker compose; em volume antigo:)
+python scripts/apply_schema.py
+
+# 1) Catálogo e metadados Steam
 python scripts/bootstrap_games_from_json.py
-python scripts/enrich_descriptions_from_metadata.py
 python scripts/collect_top_games.py --limit 100
+python scripts/enrich_games.py
 python scripts/backfill_embeddings.py
 
-# 2) Reviews: mais úteis de todos os tempos (positivas e negativas) + recentes, PT-BR e inglês
-# --limit-games 0 = todos os jogos; --force recoleta
-python scripts/collect_reviews.py --limit-games 20
+# 2) Amostra estratificada (≥200 reviews Steam; só estes entram na coleta)
+python scripts/select_sample.py --per-genre 8 --total 80
 
-# 3) Aspectos via Gemini: categoria + sentimento + trecho literal + resumo
-# Repita (diariamente, no free tier) até zerar as pendentes
+# 3) Reviews: proporcional 50/idioma + úteis 25/25; fatias TEXT[]; round-robin por gênero
+# Métricas/RF usam só fatia proporcional. Em segundo plano:
+#   nohup python -u scripts/collect_reviews.py --limit-games 0 > ../logs/collect_reviews.log 2>&1 &
+python scripts/collect_reviews.py --limit-games 0
+
+# 4) Aspectos via Gemini (repita no free tier até zerar as pendentes)
 python scripts/run_absa.py --limit 200
 
-# 4) Temas recorrentes (cluster dos resumos + nome dado pela Gemini)
+# 5–7) Temas, métricas, drivers (rode juntos: o 5 recria os temas)
 python scripts/cluster_themes.py
-
-# 5) Recorrência por gênero (Wilson, qui-quadrado, Benjamini-Hochberg)
 python scripts/compute_theme_stats.py
-
-# 6) Random Forest de drivers de recomendação
 python ml/train_drivers.py
 ```
 
-Rode os passos 4–6 juntos: o 4 recria os temas. Métricas de cada execução ficam em `experiments/*.json`.
+Métricas de cada execução ficam em `experiments/*.json`.
 
-**Catálogo pelos mais vendidos.** `collect_top_games.py` usa só a API oficial da Steam
-(`IStoreTopSellersService/GetWeeklyTopSellers`, o top 100 por receita de cada semana no Brasil). As
-últimas `--weeks` semanas (padrão 52, o último ano, com cerca de 650 jogos distintos) viram um ranking
-só. Cada semana dá 100 pontos ao 1º lugar e 1 ao 100º, o que premia quem vende bem o ano todo, não só
-no lançamento. Cada jogo novo é completado com o `appdetails` da Store BR.
+**Catálogo.** `collect_top_games.py` soma 52 semanas do top sellers oficial da Steam (BR). Softwares e
+DLCs vão para `apps_ignorados`. `enrich_games.py` completa `release_date`, categorias, estúdios e
+idiomas via `appdetails`. `select_sample.py` marca `na_amostra` para a coleta de reviews não gastar
+tempo em jogos fora da análise.
 
-Softwares, DLCs e apps sem página no Brasil vão para `apps_ignorados`, para não serem consultados de
-novo. O script retoma de onde parou, e o `collect_reviews.py` segue a mesma ordem. A Store aceita cerca
-de 200 consultas a cada 5 minutos, então 100 jogos novos levam uns 4 minutos. Use `--weeks 520` para
-um ranking de 10 anos e `--skip-free` para deixar os gratuitos de fora.
-
-Verificar:
+**Verificar antes do ABSA:**
 
 ```bash
-curl -s http://localhost:8000/health | jq .contagens
+docker compose exec db psql -U pixel -d pixeloracle -c "
+  SELECT tipo_amostra, count(*) FROM reviews GROUP BY 1;
+  SELECT count(*) FILTER (WHERE na_amostra) AS amostra,
+         count(*) FILTER (WHERE reviews_collected_at IS NULL AND na_amostra) AS amostra_sem_reviews
+  FROM games;
+  SELECT count(*) FROM review_snapshots;
+"
+# \d reviews  — sem coluna de autor
 ```
 
 ### Compartilhar os dados com o grupo

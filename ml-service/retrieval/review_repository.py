@@ -11,6 +11,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from absa.significance import quote_rank_key
+from collection.reviews_client import FATIA_PROPORCIONAL, FATIAS_UTEIS
 from models.orm import Game, GameGenre, Genre, GenreDriver, Review, ReviewAspect, Theme, ThemeStat
 
 MAX_REVIEW_TEXT = 600
@@ -25,11 +26,26 @@ def load_themes(session: Session) -> Dict[int, Dict[str, Any]]:
 
 
 def load_scope(
-    session: Session, game_ids: Sequence[int]
+    session: Session,
+    game_ids: Sequence[int],
+    *,
+    only_proportional: bool = True,
 ) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
-    """Reviews já processadas pela ABSA + seus aspectos, para um conjunto de jogos."""
+    """
+    Reviews já processadas pela ABSA + aspectos.
+
+    Por padrão só a fatia `proporcional` (métricas / RF sem viés 50/50 das úteis).
+    Jogos com elegivel_metricas=FALSE ficam de fora.
+    """
     if not game_ids:
         return [], []
+    where = [
+        Review.game_id.in_(list(game_ids)),
+        Review.absa_processed_at.isnot(None),
+        Game.elegivel_metricas.is_(True),
+    ]
+    if only_proportional:
+        where.append(Review.fatias.contains([FATIA_PROPORCIONAL]))
     review_rows = session.execute(
         select(
             Review.id,
@@ -43,7 +59,7 @@ def load_scope(
             Review.early_access,
         )
         .join(Game, Game.id == Review.game_id)
-        .where(Review.game_id.in_(list(game_ids)), Review.absa_processed_at.isnot(None))
+        .where(*where)
     ).all()
     reviews = [
         {
@@ -166,14 +182,15 @@ def load_drivers(
 
 
 def top_reviews_for_game(session: Session, game_id: int, *, per_polarity: int = 3) -> Dict[str, List[Dict[str, Any]]]:
-    """Reviews de referência: as mais úteis positivas e negativas, com resposta do dev."""
+    """Reviews de referência: preferem fatias úteis (citações), não a proporcional."""
     rows = (
         session.query(Review)
         .filter(Review.game_id == game_id, Review.texto.isnot(None))
         .all()
     )
-    as_dicts = [
-        {
+
+    def _as_dict(r: Review) -> Dict[str, Any]:
+        return {
             "review_id": r.id,
             "recomendada": bool(r.recomendada),
             "texto": (r.texto or "")[:MAX_REVIEW_TEXT],
@@ -184,11 +201,13 @@ def top_reviews_for_game(session: Session, game_id: int, *, per_polarity: int = 
             "idioma": r.language,
             "early_access": bool(r.early_access),
             "resposta_desenvolvedor": (r.developer_response or "")[:MAX_DEV_RESPONSE] or None,
+            "fatias": list(r.fatias or []),
         }
-        for r in rows
-    ]
-    positives = sorted((r for r in as_dicts if r["recomendada"]), key=quote_rank_key)[:per_polarity]
-    negatives = sorted((r for r in as_dicts if not r["recomendada"]), key=quote_rank_key)[:per_polarity]
+
+    useful = [_as_dict(r) for r in rows if FATIAS_UTEIS.intersection(r.fatias or [])]
+    pool = useful or [_as_dict(r) for r in rows]
+    positives = sorted((r for r in pool if r["recomendada"]), key=quote_rank_key)[:per_polarity]
+    negatives = sorted((r for r in pool if not r["recomendada"]), key=quote_rank_key)[:per_polarity]
     return {"positivas": positives, "negativas": negatives}
 
 
