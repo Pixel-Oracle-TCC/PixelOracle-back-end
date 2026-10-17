@@ -45,9 +45,7 @@
         "total_positive": 18,
         "total_reviews": 38,
         "score_desc": "Mixed",
-        "user_score": 47.37,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 1140
+        "user_score": 47.37
     },
     {
         "app_id": 1037130,
@@ -94,9 +92,7 @@
         "total_positive": 915,
         "total_reviews": 1048,
         "score_desc": "Very Positive",
-        "user_score": 87.31,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 31440
+        "user_score": 87.31
     },
     {
         "app_id": 1062110,
@@ -152,9 +148,7 @@
         "total_positive": 1664,
         "total_reviews": 1785,
         "score_desc": "Very Positive",
-        "user_score": 93.22,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 53550
+        "user_score": 93.22
     },
     {
         "app_id": 1066890,
@@ -206,9 +200,7 @@
         "total_positive": 10294,
         "total_reviews": 11258,
         "score_desc": "Very Positive",
-        "user_score": 91.44,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 337740
+        "user_score": 91.44
     },
     {
         "app_id": 1085040,
@@ -258,9 +250,7 @@
         "total_positive": 81,
         "total_reviews": 82,
         "score_desc": "Very Positive",
-        "user_score": 98.78,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 2460
+        "user_score": 98.78
     },
     {
         "app_id": 1114530,
@@ -305,9 +295,7 @@
         "total_positive": 122,
         "total_reviews": 141,
         "score_desc": "Very Positive",
-        "user_score": 86.52,
-        "multiplicador_boxleiter": 35,
-        "vendas_estimadas": 4935
+        "user_score": 86.52
     },
     {
         "app_id": 1201630,
@@ -356,9 +344,7 @@
         "total_positive": 880,
         "total_reviews": 1320,
         "score_desc": "Mixed",
-        "user_score": 66.67,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 39600
+        "user_score": 66.67
     },
     {
         "app_id": 1222570,
@@ -404,9 +390,7 @@
         "total_positive": 103,
         "total_reviews": 118,
         "score_desc": "Very Positive",
-        "user_score": 87.29,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 3540
+        "user_score": 87.29
     },
     {
         "app_id": 1231130,
@@ -451,9 +435,7 @@
         "total_positive": 10,
         "total_reviews": 11,
         "score_desc": "Positive",
-        "user_score": 90.91,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 330
+        "user_score": 90.91
     },
     {
         "app_id": 1248550,
@@ -506,9 +488,7 @@
         "total_positive": 45,
         "total_reviews": 62,
         "score_desc": "Mostly Positive",
-        "user_score": 72.58,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 1860
+        "user_score": 72.58
     },
     {
         "app_id": 1262040,
@@ -553,9 +533,7 @@
         "total_positive": 742,
         "total_reviews": 771,
         "score_desc": "Overwhelmingly Positive",
-        "user_score": 96.24,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 23130
+        "user_score": 96.24
     },
     {
         "app_id": 1269370,
@@ -601,9 +579,7 @@
         "total_positive": 2910,
         "total_reviews": 3863,
         "score_desc": "Mostly Positive",
-        "user_score": 75.33,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 115890
+        "user_score": 75.33
     },
     {
         "app_id": 1279920,
@@ -654,9 +630,7 @@
         "total_positive": 348,
         "total_reviews": 414,
         "score_desc": "Very Positive",
-        "user_score": 84.06,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 12420
+        "user_score": 84.06
     },
     {
         "app_id": 1307090,
@@ -710,9 +684,7 @@
         "total_positive": 1002,
         "total_reviews": 1193,
         "score_desc": "Very Positive",
-        "user_score": 83.99,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 35790
+        "user_score": 83.99
     },
     {
         "app_id": 1331210,
@@ -761,9 +733,7 @@
         "total_positive": 671,
         "total_reviews": 754,
         "score_desc": "Very Positive",
-        "user_score": 88.99,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 22620
+        "user_score": 88.99
     },
     {
         "app_id": 1364290,
@@ -814,9 +784,7 @@
         "total_positive": 1781,
         "total_reviews": 2749,
         "score_desc": "Mixed",
-        "user_score": 64.79,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 82470
+        "user_score": 64.79
     },
     {
         "app_id": 1366810,
@@ -860,9 +828,7 @@
         "total_positive": 141,
         "total_reviews": 188,
         "score_desc": "Mostly Positive",
-        "user_score": 75.0,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 5640
+        "user_score": 75.0
     },
     {
         "app_id": 1385590,
@@ -907,9 +873,7 @@
         "total_positive": 10,
         "total_reviews": 12,
         "score_desc": "Positive",
-        "user_score": 83.33,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 360
+        "user_score": 83.33
     },
     {
         "app_id": 1387650,
@@ -955,9 +919,7 @@
         "total_positive": 49,
         "total_reviews": 49,
         "score_desc": "Positive",
-        "user_score": 100.0,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 1470
+        "user_score": 100.0
     },
     {
         "app_id": 1395560,
@@ -1007,9 +969,7 @@
         "total_positive": 3080,
         "total_reviews": 3377,
         "score_desc": "Very Positive",
-        "user_score": 91.21,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 101310
+        "user_score": 91.21
     },
     {
         "app_id": 1410440,
@@ -1053,9 +1013,7 @@
         "total_positive": 90,
         "total_reviews": 90,
         "score_desc": "Very Positive",
-        "user_score": 100.0,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 2700
+        "user_score": 100.0
     },
     {
         "app_id": 1415140,
@@ -1101,9 +1059,7 @@
         "total_positive": 601,
         "total_reviews": 692,
         "score_desc": "Very Positive",
-        "user_score": 86.85,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 20760
+        "user_score": 86.85
     },
     {
         "app_id": 1431230,
@@ -1151,9 +1107,7 @@
         "total_positive": 574,
         "total_reviews": 667,
         "score_desc": "Very Positive",
-        "user_score": 86.06,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 20010
+        "user_score": 86.06
     },
     {
         "app_id": 1450650,
@@ -1198,9 +1152,7 @@
         "total_positive": 120,
         "total_reviews": 140,
         "score_desc": "Very Positive",
-        "user_score": 85.71,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 4200
+        "user_score": 85.71
     },
     {
         "app_id": 1453400,
@@ -1244,9 +1196,7 @@
         "total_positive": 13,
         "total_reviews": 22,
         "score_desc": "Mixed",
-        "user_score": 59.09,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 660
+        "user_score": 59.09
     },
     {
         "app_id": 1455230,
@@ -1292,9 +1242,7 @@
         "total_positive": 79,
         "total_reviews": 82,
         "score_desc": "Very Positive",
-        "user_score": 96.34,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 2460
+        "user_score": 96.34
     },
     {
         "app_id": 1483800,
@@ -1341,9 +1289,7 @@
         "total_positive": 33,
         "total_reviews": 34,
         "score_desc": "Positive",
-        "user_score": 97.06,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 1020
+        "user_score": 97.06
     },
     {
         "app_id": 1501410,
@@ -1390,9 +1336,7 @@
         "total_positive": 299,
         "total_reviews": 323,
         "score_desc": "Very Positive",
-        "user_score": 92.57,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 9690
+        "user_score": 92.57
     },
     {
         "app_id": 1501610,
@@ -1441,9 +1385,7 @@
         "total_positive": 2228,
         "total_reviews": 2455,
         "score_desc": "Very Positive",
-        "user_score": 90.75,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 73650
+        "user_score": 90.75
     },
     {
         "app_id": 1507580,
@@ -1494,9 +1436,7 @@
         "total_positive": 2793,
         "total_reviews": 2933,
         "score_desc": "Overwhelmingly Positive",
-        "user_score": 95.23,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 87990
+        "user_score": 95.23
     },
     {
         "app_id": 1542860,
@@ -1542,9 +1482,7 @@
         "total_positive": 39,
         "total_reviews": 40,
         "score_desc": "Positive",
-        "user_score": 97.5,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 1200
+        "user_score": 97.5
     },
     {
         "app_id": 1554460,
@@ -1594,9 +1532,7 @@
         "total_positive": 15,
         "total_reviews": 16,
         "score_desc": "Positive",
-        "user_score": 93.75,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 480
+        "user_score": 93.75
     },
     {
         "app_id": 1569520,
@@ -1649,9 +1585,7 @@
         "total_positive": 1278,
         "total_reviews": 1308,
         "score_desc": "Overwhelmingly Positive",
-        "user_score": 97.71,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 39240
+        "user_score": 97.71
     },
     {
         "app_id": 1583850,
@@ -1696,9 +1630,7 @@
         "total_positive": 271,
         "total_reviews": 296,
         "score_desc": "Very Positive",
-        "user_score": 91.55,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 8880
+        "user_score": 91.55
     },
     {
         "app_id": 1592110,
@@ -1761,9 +1693,7 @@
         "total_positive": 820,
         "total_reviews": 1178,
         "score_desc": "Mixed",
-        "user_score": 69.61,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 35340
+        "user_score": 69.61
     },
     {
         "app_id": 1665990,
@@ -1807,9 +1737,7 @@
         "total_positive": 1,
         "total_reviews": 6,
         "score_desc": "6 user reviews",
-        "user_score": 16.67,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 180
+        "user_score": 16.67
     },
     {
         "app_id": 1670830,
@@ -1857,9 +1785,7 @@
         "total_positive": 375,
         "total_reviews": 388,
         "score_desc": "Very Positive",
-        "user_score": 96.65,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 11640
+        "user_score": 96.65
     },
     {
         "app_id": 1711840,
@@ -1905,9 +1831,7 @@
         "total_positive": 103,
         "total_reviews": 135,
         "score_desc": "Mostly Positive",
-        "user_score": 76.3,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 4050
+        "user_score": 76.3
     },
     {
         "app_id": 1752250,
@@ -1951,9 +1875,7 @@
         "total_positive": 110,
         "total_reviews": 122,
         "score_desc": "Very Positive",
-        "user_score": 90.16,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 3660
+        "user_score": 90.16
     },
     {
         "app_id": 1836120,
@@ -2001,9 +1923,7 @@
         "total_positive": 1906,
         "total_reviews": 2121,
         "score_desc": "Very Positive",
-        "user_score": 89.86,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 63630
+        "user_score": 89.86
     },
     {
         "app_id": 1875280,
@@ -2054,9 +1974,7 @@
         "total_positive": 346,
         "total_reviews": 512,
         "score_desc": "Mixed",
-        "user_score": 67.58,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 15360
+        "user_score": 67.58
     },
     {
         "app_id": 1919460,
@@ -2104,9 +2022,7 @@
         "total_positive": 3722,
         "total_reviews": 3972,
         "score_desc": "Very Positive",
-        "user_score": 93.71,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 119160
+        "user_score": 93.71
     },
     {
         "app_id": 1932210,
@@ -2164,9 +2080,7 @@
         "total_positive": 90,
         "total_reviews": 106,
         "score_desc": "Very Positive",
-        "user_score": 84.91,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 3180
+        "user_score": 84.91
     },
     {
         "app_id": 1933370,
@@ -2213,9 +2127,7 @@
         "total_positive": 156,
         "total_reviews": 209,
         "score_desc": "Mostly Positive",
-        "user_score": 74.64,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 6270
+        "user_score": 74.64
     },
     {
         "app_id": 1942330,
@@ -2262,9 +2174,7 @@
         "total_positive": 18,
         "total_reviews": 23,
         "score_desc": "Mostly Positive",
-        "user_score": 78.26,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 690
+        "user_score": 78.26
     },
     {
         "app_id": 1990740,
@@ -2318,9 +2228,7 @@
         "total_positive": 653,
         "total_reviews": 774,
         "score_desc": "Very Positive",
-        "user_score": 84.37,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 23220
+        "user_score": 84.37
     },
     {
         "app_id": 2062920,
@@ -2366,9 +2274,7 @@
         "total_positive": 74,
         "total_reviews": 77,
         "score_desc": "Very Positive",
-        "user_score": 96.1,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 2310
+        "user_score": 96.1
     },
     {
         "app_id": 2089980,
@@ -2423,9 +2329,7 @@
         "total_positive": 544,
         "total_reviews": 889,
         "score_desc": "Mixed",
-        "user_score": 61.19,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 26670
+        "user_score": 61.19
     },
     {
         "app_id": 2111190,
@@ -2474,9 +2378,7 @@
         "total_positive": 7591,
         "total_reviews": 7771,
         "score_desc": "Overwhelmingly Positive",
-        "user_score": 97.68,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 233130
+        "user_score": 97.68
     },
     {
         "app_id": 2125600,
@@ -2521,9 +2423,7 @@
         "total_positive": 5,
         "total_reviews": 6,
         "score_desc": "6 user reviews",
-        "user_score": 83.33,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 180
+        "user_score": 83.33
     },
     {
         "app_id": 2147530,
@@ -2570,9 +2470,7 @@
         "total_positive": 178,
         "total_reviews": 196,
         "score_desc": "Very Positive",
-        "user_score": 90.82,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 5880
+        "user_score": 90.82
     },
     {
         "app_id": 2158650,
@@ -2618,9 +2516,7 @@
         "total_positive": 281,
         "total_reviews": 328,
         "score_desc": "Very Positive",
-        "user_score": 85.67,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 9840
+        "user_score": 85.67
     },
     {
         "app_id": 2165740,
@@ -2669,9 +2565,7 @@
         "total_positive": 93,
         "total_reviews": 100,
         "score_desc": "Very Positive",
-        "user_score": 93.0,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 3000
+        "user_score": 93.0
     },
     {
         "app_id": 2181720,
@@ -2720,9 +2614,7 @@
         "total_positive": 1490,
         "total_reviews": 1810,
         "score_desc": "Very Positive",
-        "user_score": 82.32,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 54300
+        "user_score": 82.32
     },
     {
         "app_id": 2193670,
@@ -2773,9 +2665,7 @@
         "total_positive": 4,
         "total_reviews": 4,
         "score_desc": "4 user reviews",
-        "user_score": 100.0,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 120
+        "user_score": 100.0
     },
     {
         "app_id": 2206270,
@@ -2823,9 +2713,7 @@
         "total_positive": 1547,
         "total_reviews": 1721,
         "score_desc": "Very Positive",
-        "user_score": 89.89,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 51630
+        "user_score": 89.89
     },
     {
         "app_id": 2246120,
@@ -2872,9 +2760,7 @@
         "total_positive": 285,
         "total_reviews": 305,
         "score_desc": "Very Positive",
-        "user_score": 93.44,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 9150
+        "user_score": 93.44
     },
     {
         "app_id": 2306390,
@@ -2917,9 +2803,7 @@
         "total_positive": 14,
         "total_reviews": 17,
         "score_desc": "Positive",
-        "user_score": 82.35,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 510
+        "user_score": 82.35
     },
     {
         "app_id": 2363930,
@@ -2964,9 +2848,7 @@
         "total_positive": 143,
         "total_reviews": 159,
         "score_desc": "Very Positive",
-        "user_score": 89.94,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 4770
+        "user_score": 89.94
     },
     {
         "app_id": 2368190,
@@ -3011,9 +2893,7 @@
         "total_positive": 84,
         "total_reviews": 89,
         "score_desc": "Very Positive",
-        "user_score": 94.38,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 2670
+        "user_score": 94.38
     },
     {
         "app_id": 2424480,
@@ -3069,9 +2949,7 @@
         "total_positive": 8,
         "total_reviews": 13,
         "score_desc": "Mixed",
-        "user_score": 61.54,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 390
+        "user_score": 61.54
     },
     {
         "app_id": 2466900,
@@ -3119,9 +2997,7 @@
         "total_positive": 318,
         "total_reviews": 334,
         "score_desc": "Very Positive",
-        "user_score": 95.21,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 10020
+        "user_score": 95.21
     },
     {
         "app_id": 2485080,
@@ -3165,9 +3041,7 @@
         "total_positive": 21,
         "total_reviews": 25,
         "score_desc": "Positive",
-        "user_score": 84.0,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 750
+        "user_score": 84.0
     },
     {
         "app_id": 251130,
@@ -3218,9 +3092,7 @@
         "total_positive": 2732,
         "total_reviews": 2872,
         "score_desc": "Overwhelmingly Positive",
-        "user_score": 95.13,
-        "multiplicador_boxleiter": 50,
-        "vendas_estimadas": 143600
+        "user_score": 95.13
     },
     {
         "app_id": 2691790,
@@ -3276,9 +3148,7 @@
         "total_positive": 9,
         "total_reviews": 14,
         "score_desc": "Mixed",
-        "user_score": 64.29,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 420
+        "user_score": 64.29
     },
     {
         "app_id": 273750,
@@ -3324,9 +3194,7 @@
         "total_positive": 135,
         "total_reviews": 172,
         "score_desc": "Mostly Positive",
-        "user_score": 78.49,
-        "multiplicador_boxleiter": 50,
-        "vendas_estimadas": 8600
+        "user_score": 78.49
     },
     {
         "app_id": 2821110,
@@ -3373,9 +3241,7 @@
         "total_positive": 70,
         "total_reviews": 73,
         "score_desc": "Very Positive",
-        "user_score": 95.89,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 2190
+        "user_score": 95.89
     },
     {
         "app_id": 2900760,
@@ -3423,9 +3289,7 @@
         "total_positive": 66,
         "total_reviews": 68,
         "score_desc": "Very Positive",
-        "user_score": 97.06,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 2040
+        "user_score": 97.06
     },
     {
         "app_id": 2950000,
@@ -3472,9 +3336,7 @@
         "total_positive": 51,
         "total_reviews": 66,
         "score_desc": "Mostly Positive",
-        "user_score": 77.27,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 1980
+        "user_score": 77.27
     },
     {
         "app_id": 2998040,
@@ -3518,9 +3380,7 @@
         "total_positive": 141,
         "total_reviews": 144,
         "score_desc": "Very Positive",
-        "user_score": 97.92,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 4320
+        "user_score": 97.92
     },
     {
         "app_id": 302790,
@@ -3566,9 +3426,7 @@
         "total_positive": 1194,
         "total_reviews": 1273,
         "score_desc": "Very Positive",
-        "user_score": 93.79,
-        "multiplicador_boxleiter": 50,
-        "vendas_estimadas": 63650
+        "user_score": 93.79
     },
     {
         "app_id": 3079600,
@@ -3612,9 +3470,7 @@
         "total_positive": 80,
         "total_reviews": 84,
         "score_desc": "Very Positive",
-        "user_score": 95.24,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 2520
+        "user_score": 95.24
     },
     {
         "app_id": 3191050,
@@ -3670,9 +3526,7 @@
         "total_positive": 6463,
         "total_reviews": 6594,
         "score_desc": "Overwhelmingly Positive",
-        "user_score": 98.01,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 197820
+        "user_score": 98.01
     },
     {
         "app_id": 3259400,
@@ -3718,9 +3572,7 @@
         "total_positive": 18,
         "total_reviews": 22,
         "score_desc": "Positive",
-        "user_score": 81.82,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 660
+        "user_score": 81.82
     },
     {
         "app_id": 330350,
@@ -3767,9 +3619,7 @@
         "total_positive": 222,
         "total_reviews": 742,
         "score_desc": "Mostly Negative",
-        "user_score": 29.92,
-        "multiplicador_boxleiter": 50,
-        "vendas_estimadas": 37100
+        "user_score": 29.92
     },
     {
         "app_id": 332480,
@@ -3817,9 +3667,7 @@
         "total_positive": 546,
         "total_reviews": 650,
         "score_desc": "Very Positive",
-        "user_score": 84.0,
-        "multiplicador_boxleiter": 50,
-        "vendas_estimadas": 32500
+        "user_score": 84.0
     },
     {
         "app_id": 34900,
@@ -3863,9 +3711,7 @@
         "total_positive": 5463,
         "total_reviews": 7056,
         "score_desc": "Mostly Positive",
-        "user_score": 77.42,
-        "multiplicador_boxleiter": 60,
-        "vendas_estimadas": 423360
+        "user_score": 77.42
     },
     {
         "app_id": 357070,
@@ -3911,9 +3757,7 @@
         "total_positive": 5763,
         "total_reviews": 6337,
         "score_desc": "Very Positive",
-        "user_score": 90.94,
-        "multiplicador_boxleiter": 50,
-        "vendas_estimadas": 316850
+        "user_score": 90.94
     },
     {
         "app_id": 384550,
@@ -3958,9 +3802,7 @@
         "total_positive": 226,
         "total_reviews": 337,
         "score_desc": "Mixed",
-        "user_score": 67.06,
-        "multiplicador_boxleiter": 50,
-        "vendas_estimadas": 16850
+        "user_score": 67.06
     },
     {
         "app_id": 389140,
@@ -4017,9 +3859,7 @@
         "total_positive": 3863,
         "total_reviews": 4097,
         "score_desc": "Very Positive",
-        "user_score": 94.29,
-        "multiplicador_boxleiter": 35,
-        "vendas_estimadas": 143395
+        "user_score": 94.29
     },
     {
         "app_id": 389170,
@@ -4070,9 +3910,7 @@
         "total_positive": 2258,
         "total_reviews": 2339,
         "score_desc": "Overwhelmingly Positive",
-        "user_score": 96.54,
-        "multiplicador_boxleiter": 50,
-        "vendas_estimadas": 116950
+        "user_score": 96.54
     },
     {
         "app_id": 393200,
@@ -4125,9 +3963,7 @@
         "total_positive": 444,
         "total_reviews": 550,
         "score_desc": "Very Positive",
-        "user_score": 80.73,
-        "multiplicador_boxleiter": 50,
-        "vendas_estimadas": 27500
+        "user_score": 80.73
     },
     {
         "app_id": 400080,
@@ -4184,9 +4020,7 @@
         "total_positive": 1554,
         "total_reviews": 1965,
         "score_desc": "Mostly Positive",
-        "user_score": 79.08,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 58950
+        "user_score": 79.08
     },
     {
         "app_id": 428550,
@@ -4235,9 +4069,7 @@
         "total_positive": 9569,
         "total_reviews": 10217,
         "score_desc": "Very Positive",
-        "user_score": 93.66,
-        "multiplicador_boxleiter": 50,
-        "vendas_estimadas": 510850
+        "user_score": 93.66
     },
     {
         "app_id": 431600,
@@ -4284,9 +4116,7 @@
         "total_positive": 1508,
         "total_reviews": 1688,
         "score_desc": "Very Positive",
-        "user_score": 89.34,
-        "multiplicador_boxleiter": 50,
-        "vendas_estimadas": 84400
+        "user_score": 89.34
     },
     {
         "app_id": 438480,
@@ -4334,9 +4164,7 @@
         "total_positive": 2877,
         "total_reviews": 3274,
         "score_desc": "Very Positive",
-        "user_score": 87.87,
-        "multiplicador_boxleiter": 50,
-        "vendas_estimadas": 163700
+        "user_score": 87.87
     },
     {
         "app_id": 447850,
@@ -4381,9 +4209,7 @@
         "total_positive": 166,
         "total_reviews": 333,
         "score_desc": "Mixed",
-        "user_score": 49.85,
-        "multiplicador_boxleiter": 50,
-        "vendas_estimadas": 16650
+        "user_score": 49.85
     },
     {
         "app_id": 449220,
@@ -4429,9 +4255,7 @@
         "total_positive": 147,
         "total_reviews": 169,
         "score_desc": "Very Positive",
-        "user_score": 86.98,
-        "multiplicador_boxleiter": 50,
-        "vendas_estimadas": 8450
+        "user_score": 86.98
     },
     {
         "app_id": 494120,
@@ -4478,9 +4302,7 @@
         "total_positive": 32,
         "total_reviews": 44,
         "score_desc": "Mostly Positive",
-        "user_score": 72.73,
-        "multiplicador_boxleiter": 50,
-        "vendas_estimadas": 2200
+        "user_score": 72.73
     },
     {
         "app_id": 536040,
@@ -4529,9 +4351,7 @@
         "total_positive": 237,
         "total_reviews": 327,
         "score_desc": "Mostly Positive",
-        "user_score": 72.48,
-        "multiplicador_boxleiter": 50,
-        "vendas_estimadas": 16350
+        "user_score": 72.48
     },
     {
         "app_id": 542880,
@@ -4577,9 +4397,7 @@
         "total_positive": 115,
         "total_reviews": 138,
         "score_desc": "Very Positive",
-        "user_score": 83.33,
-        "multiplicador_boxleiter": 50,
-        "vendas_estimadas": 6900
+        "user_score": 83.33
     },
     {
         "app_id": 548720,
@@ -4626,9 +4444,7 @@
         "total_positive": 70,
         "total_reviews": 86,
         "score_desc": "Very Positive",
-        "user_score": 81.4,
-        "multiplicador_boxleiter": 40,
-        "vendas_estimadas": 3440
+        "user_score": 81.4
     },
     {
         "app_id": 609110,
@@ -4684,9 +4500,7 @@
         "total_positive": 1152,
         "total_reviews": 1292,
         "score_desc": "Very Positive",
-        "user_score": 89.16,
-        "multiplicador_boxleiter": 35,
-        "vendas_estimadas": 45220
+        "user_score": 89.16
     },
     {
         "app_id": 612390,
@@ -4733,9 +4547,7 @@
         "total_positive": 717,
         "total_reviews": 836,
         "score_desc": "Very Positive",
-        "user_score": 85.77,
-        "multiplicador_boxleiter": 35,
-        "vendas_estimadas": 29260
+        "user_score": 85.77
     },
     {
         "app_id": 618140,
@@ -4790,9 +4602,7 @@
         "total_positive": 2684,
         "total_reviews": 3148,
         "score_desc": "Very Positive",
-        "user_score": 85.26,
-        "multiplicador_boxleiter": 35,
-        "vendas_estimadas": 110180
+        "user_score": 85.26
     },
     {
         "app_id": 630720,
@@ -4842,9 +4652,7 @@
         "total_positive": 379,
         "total_reviews": 473,
         "score_desc": "Very Positive",
-        "user_score": 80.13,
-        "multiplicador_boxleiter": 35,
-        "vendas_estimadas": 16555
+        "user_score": 80.13
     },
     {
         "app_id": 636150,
@@ -4894,9 +4702,7 @@
         "total_positive": 2183,
         "total_reviews": 2573,
         "score_desc": "Very Positive",
-        "user_score": 84.84,
-        "multiplicador_boxleiter": 40,
-        "vendas_estimadas": 102920
+        "user_score": 84.84
     },
     {
         "app_id": 696140,
@@ -4955,9 +4761,7 @@
         "total_positive": 328,
         "total_reviews": 370,
         "score_desc": "Very Positive",
-        "user_score": 88.65,
-        "multiplicador_boxleiter": 40,
-        "vendas_estimadas": 14800
+        "user_score": 88.65
     },
     {
         "app_id": 696490,
@@ -5005,9 +4809,7 @@
         "total_positive": 42,
         "total_reviews": 52,
         "score_desc": "Very Positive",
-        "user_score": 80.77,
-        "multiplicador_boxleiter": 40,
-        "vendas_estimadas": 2080
+        "user_score": 80.77
     },
     {
         "app_id": 704920,
@@ -5060,9 +4862,7 @@
         "total_positive": 66,
         "total_reviews": 71,
         "score_desc": "Very Positive",
-        "user_score": 92.96,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 2130
+        "user_score": 92.96
     },
     {
         "app_id": 714240,
@@ -5107,9 +4907,7 @@
         "total_positive": 84,
         "total_reviews": 99,
         "score_desc": "Very Positive",
-        "user_score": 84.85,
-        "multiplicador_boxleiter": 40,
-        "vendas_estimadas": 3960
+        "user_score": 84.85
     },
     {
         "app_id": 787790,
@@ -5166,9 +4964,7 @@
         "total_positive": 16,
         "total_reviews": 24,
         "score_desc": "Mixed",
-        "user_score": 66.67,
-        "multiplicador_boxleiter": 35,
-        "vendas_estimadas": 840
+        "user_score": 66.67
     },
     {
         "app_id": 831050,
@@ -5218,9 +5014,7 @@
         "total_positive": 145,
         "total_reviews": 259,
         "score_desc": "Mixed",
-        "user_score": 55.98,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 7770
+        "user_score": 55.98
     },
     {
         "app_id": 833360,
@@ -5268,9 +5062,7 @@
         "total_positive": 2752,
         "total_reviews": 3104,
         "score_desc": "Very Positive",
-        "user_score": 88.66,
-        "multiplicador_boxleiter": 30,
-        "vendas_estimadas": 93120
+        "user_score": 88.66
     },
     {
         "app_id": 852110,
@@ -5316,9 +5108,7 @@
         "total_positive": 1402,
         "total_reviews": 1455,
         "score_desc": "Overwhelmingly Positive",
-        "user_score": 96.36,
-        "multiplicador_boxleiter": 35,
-        "vendas_estimadas": 50925
+        "user_score": 96.36
     },
     {
         "app_id": 907760,
@@ -5370,9 +5160,7 @@
         "total_positive": 555,
         "total_reviews": 611,
         "score_desc": "Very Positive",
-        "user_score": 90.83,
-        "multiplicador_boxleiter": 35,
-        "vendas_estimadas": 21385
+        "user_score": 90.83
     },
     {
         "app_id": 909100,
@@ -5421,9 +5209,7 @@
         "total_positive": 1,
         "total_reviews": 2,
         "score_desc": "2 user reviews",
-        "user_score": 50.0,
-        "multiplicador_boxleiter": 35,
-        "vendas_estimadas": 70
+        "user_score": 50.0
     },
     {
         "app_id": 939580,
@@ -5467,9 +5253,7 @@
         "total_positive": 0,
         "total_reviews": 0,
         "score_desc": "No user reviews",
-        "user_score": 0,
-        "multiplicador_boxleiter": 35,
-        "vendas_estimadas": 0
+        "user_score": 0
     },
     {
         "app_id": 952290,
@@ -5514,9 +5298,7 @@
         "total_positive": 1333,
         "total_reviews": 1413,
         "score_desc": "Very Positive",
-        "user_score": 94.34,
-        "multiplicador_boxleiter": 35,
-        "vendas_estimadas": 49455
+        "user_score": 94.34
     },
     {
         "app_id": 963280,
@@ -5570,8 +5352,6 @@
         "total_positive": 341,
         "total_reviews": 356,
         "score_desc": "Very Positive",
-        "user_score": 95.79,
-        "multiplicador_boxleiter": 35,
-        "vendas_estimadas": 12460
+        "user_score": 95.79
     }
 ]

@@ -51,7 +51,9 @@ class SimilarGamesRetriever:
                 descricao,
                 preco_brl,
                 release_year,
-                owners_estimados,
+                total_positive,
+                total_reviews_steam,
+                review_score_desc,
                 1 - (embedding <=> CAST(:query AS vector)) AS similaridade
             FROM games
             WHERE embedding IS NOT NULL
@@ -69,16 +71,21 @@ class SimilarGamesRetriever:
 
         results: List[Dict[str, Any]] = []
         for row in rows:
+            total = row["total_reviews_steam"]
+            positive = row["total_positive"]
             results.append(
                 {
                     "id": row["id"],
                     "steam_appid": row["steam_appid"],
                     "titulo": row["titulo"],
-                    # Truncar descrição: evita payload gigante no /triangulate
+                    # Truncar descrição: evita payload gigante no /analyze
                     "descricao": (row["descricao"] or "")[:500],
                     "preco_brl": float(row["preco_brl"]) if row["preco_brl"] is not None else None,
                     "release_year": row["release_year"],
-                    "owners_estimados": row["owners_estimados"],
+                    # Avaliação real da Steam (query_summary), não estimativa
+                    "review_score_desc": row["review_score_desc"],
+                    "total_reviews_steam": total,
+                    "pct_positivas": round(positive / total, 4) if total and positive is not None else None,
                     "similaridade": round(float(row["similaridade"]), 4),
                 }
             )

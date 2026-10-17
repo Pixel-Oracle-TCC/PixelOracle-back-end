@@ -22,16 +22,6 @@ export function createReportController(
       }
     },
 
-    async predictOnly(req: Request, res: Response, next: NextFunction) {
-      try {
-        const pitch = parseGamePitch(req.body);
-        const result = await mlService.predict(pitch);
-        res.json(result);
-      } catch (err) {
-        next(err);
-      }
-    },
-
     async fullReport(req: Request, res: Response, next: NextFunction) {
       try {
         const pitch = parseGamePitch(req.body);

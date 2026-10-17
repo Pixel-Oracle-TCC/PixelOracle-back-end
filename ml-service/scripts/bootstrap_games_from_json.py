@@ -57,7 +57,6 @@ def upsert_game(session, rec: Dict[str, Any]) -> None:
         descricao=rec.get("short_description") or rec.get("descricao") or "",
         preco_brl=_price_brl(rec),
         release_year=rec.get("release_year"),
-        owners_estimados=rec.get("vendas_estimadas") or rec.get("owners_estimados"),
         raw_metadata=rec,
     )
     stmt = stmt.on_conflict_do_update(
@@ -67,7 +66,6 @@ def upsert_game(session, rec: Dict[str, Any]) -> None:
             "descricao": stmt.excluded.descricao,
             "preco_brl": stmt.excluded.preco_brl,
             "release_year": stmt.excluded.release_year,
-            "owners_estimados": stmt.excluded.owners_estimados,
             "raw_metadata": stmt.excluded.raw_metadata,
         },
     )

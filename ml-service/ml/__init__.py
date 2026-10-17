@@ -1,1 +1,1 @@
-"""Pipeline de ML: features e treinamento."""
+"""Random Forest de drivers de recomendação + registro de experimentos."""

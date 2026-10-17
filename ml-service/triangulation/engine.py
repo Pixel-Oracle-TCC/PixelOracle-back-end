@@ -1,219 +1,204 @@
-"""Motor de triangulação — combina RF + jogos similares + genre_insights.
+"""Motor do dashboard — combina jogos similares + temas recorrentes + drivers do RF.
 
-Por quê existe: a Gemini não deve inventar a análise. Este módulo monta um
-dashboard estruturado (com evidência por ponto) ANTES de qualquer redação.
+Por quê existe: a Gemini não deve inventar a análise. Este módulo monta o dashboard
+estruturado (cada ponto com métricas e citações reais) ANTES de qualquer redação.
+A frase de cada destaque sai daqui em versão determinística; a API Node pode pedir à
+Gemini para reescrevê-la, e um validador garante que ela só cite os jogos-exemplo.
 Ver vault: [[Motor de Triangulacao]] / [[Por que Gemini so redige]].
+
+Dois escopos de evidência:
+- "similares": reviews dos jogos mais parecidos com o pitch (mais específico);
+- "genero": theme_stats pré-calculado para os gêneros do pitch (mais amostra).
 """
 
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Sequence
 
+MAX_DESTAQUES = 6
+MAX_POR_ESCOPO = 4
+MIN_JOGOS_DISTINTOS = 2
+SHORT_PLAYTIME_ALERT = 0.5
+EARLY_ACCESS_ALERT = 0.5
+LOW_SCORE_THRESHOLD = 0.7
+
+METRIC_FIELDS = (
+    "reviews_com_tema",
+    "total_reviews",
+    "prevalencia",
+    "wilson_low",
+    "wilson_high",
+    "jogos_distintos",
+    "total_jogos",
+    "votos_uteis",
+    "pct_recomendadas_com_tema",
+    "p_value_ajustado",
+    "log_odds",
+    "significativo",
+)
+
 
 class TriangulationEngine:
-    """
-    Consolida três fontes de evidência em um dashboard estruturado
-    ANTES de qualquer redação pela Gemini.
-
-    Fontes:
-    1. prediction — saída do Random Forest (risco / probs)
-    2. similar_games — RAG via pgvector
-    3. genre_insights — aspectos agregados por gênero (ABSA offline)
-    """
-
     def build(
         self,
         *,
         pitch: Dict[str, Any],
-        prediction: Dict[str, Any],
         similar_games: Sequence[Dict[str, Any]],
-        genre_insights: Sequence[Dict[str, Any]],
+        similar_stats: Sequence[Dict[str, Any]],
+        genre_stats: Sequence[Dict[str, Any]],
+        drivers: Sequence[Dict[str, Any]],
+        reference_reviews: Sequence[Dict[str, Any]],
     ) -> Dict[str, Any]:
-        riscos_pred = (
-            (prediction.get("previsao_pixel_oracle") or {}).get("risco_comercial")
-            or "desconhecido"
+        candidates = self._candidates(similar_stats, "similares") + self._candidates(
+            self._dedupe_genre_stats(genre_stats), "genero"
         )
-        chance = (prediction.get("previsao_pixel_oracle") or {}).get(
-            "chance_sucesso_estimada_pct"
-        )
-
-        # Heurísticas determinísticas: cada ponto carrega "evidencia" para auditoria
-        # no frontend/TCC. Limite [:8] evita dashboard enorme sem ganho analítico.
-        pontos_fortes = self._strengths(genre_insights, similar_games)
-        pontos_fracos = self._weaknesses(genre_insights, riscos_pred)
-        oportunidades = self._opportunities(pitch, similar_games, genre_insights)
-        riscos = self._risks(riscos_pred, chance, genre_insights, similar_games)
+        elogios = self._select(candidates, "positivo")
+        reclamacoes = self._select(candidates, "negativo")
 
         return {
-            "predicao_ml": prediction.get("previsao_pixel_oracle") or prediction,
-            "dashboard": {
-                "pontos_fortes": pontos_fortes,
-                "pontos_fracos": pontos_fracos,
-                "oportunidades": oportunidades,
-                "riscos": riscos,
-                # Listas brutas: a API Node / Gemini podem citar sem recalcular
-                "jogos_similares": list(similar_games),
-                "insights_genero": list(genre_insights),
-            },
-            # Rastreabilidade: de onde veio cada tipo de sinal
-            "evidencias": {
-                "fonte_predicao": "random_forest",
-                "fonte_similares": "pgvector_cosine",
-                "fonte_aspectos": "genre_insights_absa",
-            },
+            "destaques": {"elogios": elogios, "reclamacoes": reclamacoes},
+            "fatores_decisivos": list(drivers),
+            "alertas": self._alerts(reclamacoes, similar_games, similar_stats, genre_stats),
+            "reviews_referencia": list(reference_reviews),
+            "jogos_similares": list(similar_games),
         }
 
-    def _strengths(
-        self,
-        insights: Sequence[Dict[str, Any]],
-        similares: Sequence[Dict[str, Any]],
+    @staticmethod
+    def _dedupe_genre_stats(stats: Sequence[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Pitch com vários gêneros: o mesmo tema aparece em cada um → fica o de maior amostra."""
+        best: Dict[int, Dict[str, Any]] = {}
+        for stat in stats:
+            current = best.get(stat["theme_id"])
+            if current is None or stat["total_reviews"] > current["total_reviews"]:
+                best[stat["theme_id"]] = stat
+        return list(best.values())
+
+    def _candidates(self, stats: Sequence[Dict[str, Any]], escopo: str) -> List[Dict[str, Any]]:
+        result = []
+        for stat in stats:
+            # Tema de um jogo só é problema daquele jogo, não padrão do mercado
+            if (stat.get("jogos_distintos") or 0) < MIN_JOGOS_DISTINTOS:
+                continue
+            result.append(self._to_highlight(stat, escopo))
+        result.sort(key=lambda h: (-h["metricas"]["prevalencia"], -h["metricas"]["votos_uteis"]))
+        return result
+
+    @staticmethod
+    def _select(candidates: Sequence[Dict[str, Any]], polaridade: str) -> List[Dict[str, Any]]:
+        """Similares primeiro (mais específico); gênero completa sem repetir tema."""
+        chosen: List[Dict[str, Any]] = []
+        seen_themes: set[int] = set()
+        for escopo in ("similares", "genero"):
+            count = 0
+            for highlight in candidates:
+                if highlight["escopo"] != escopo or highlight["tema"]["polaridade"] != polaridade:
+                    continue
+                theme_id = highlight["tema"]["theme_id"]
+                if theme_id in seen_themes or count >= MAX_POR_ESCOPO:
+                    continue
+                chosen.append(highlight)
+                seen_themes.add(theme_id)
+                count += 1
+        return chosen[:MAX_DESTAQUES]
+
+    def _to_highlight(self, stat: Dict[str, Any], escopo: str) -> Dict[str, Any]:
+        metricas = {field: stat.get(field) for field in METRIC_FIELDS}
+        highlight = {
+            "id": f"{escopo}:{stat.get('genero', 'similares')}:{stat['theme_id']}",
+            "escopo": escopo,
+            "genero": stat.get("genero"),
+            "tema": {
+                "theme_id": stat["theme_id"],
+                "rotulo": stat.get("rotulo"),
+                "categoria": stat.get("categoria"),
+                "polaridade": stat.get("polaridade"),
+            },
+            "jogos_exemplo": stat.get("jogos_exemplo") or [],
+            "metricas": metricas,
+            "citacoes": stat.get("citacoes") or [],
+            "contexto": stat.get("contexto") or {},
+        }
+        highlight["frase"] = template_sentence(highlight)
+        return highlight
+
+    @staticmethod
+    def _alerts(
+        reclamacoes: Sequence[Dict[str, Any]],
+        similar_games: Sequence[Dict[str, Any]],
+        similar_stats: Sequence[Dict[str, Any]],
+        genre_stats: Sequence[Dict[str, Any]],
     ) -> List[Dict[str, Any]]:
-        """Aspectos com mais menções positivas + referência ao top similar."""
-        items: List[Dict[str, Any]] = []
-        for insight in insights:
-            pos = int(insight.get("frequencia_positiva") or 0)
-            neg = int(insight.get("frequencia_negativa") or 0)
-            if pos > neg and pos > 0:
-                items.append(
-                    {
-                        "ponto": f"Aspecto '{insight.get('aspecto')}' bem avaliado no gênero",
-                        "evidencia": {
-                            "tipo": "genre_insight",
-                            "aspecto": insight.get("aspecto"),
-                            "frequencia_positiva": pos,
-                            "frequencia_negativa": neg,
-                            "significancia": insight.get("significancia"),
-                        },
-                    }
-                )
-        if similares:
-            # Já ordenados por similaridade no retriever (maior primeiro)
-            top = similares[0]
-            items.append(
+        alerts: List[Dict[str, Any]] = []
+        if not similar_stats and not genre_stats:
+            alerts.append(
                 {
-                    "ponto": f"Existem referências históricas próximas (ex.: {top.get('titulo')})",
-                    "evidencia": {
-                        "tipo": "jogo_similar",
-                        "titulo": top.get("titulo"),
-                        "similaridade": top.get("similaridade"),
-                    },
+                    "tipo": "dados_insuficientes",
+                    "mensagem": "Ainda não há reviews analisadas para os jogos similares nem para os gêneros informados.",
+                    "evidencia": {},
                 }
             )
-        return items[:8]
-
-    def _weaknesses(
-        self, insights: Sequence[Dict[str, Any]], risco: str
-    ) -> List[Dict[str, Any]]:
-        """Aspectos mais criticados + alerta se o RF classificar Alto Risco."""
-        items: List[Dict[str, Any]] = []
-        for insight in insights:
-            pos = int(insight.get("frequencia_positiva") or 0)
-            neg = int(insight.get("frequencia_negativa") or 0)
-            if neg > pos and neg > 0:
-                items.append(
+        for highlight in reclamacoes:
+            contexto = highlight.get("contexto") or {}
+            rotulo = highlight["tema"]["rotulo"]
+            if (contexto.get("pct_menos_2h") or 0) >= SHORT_PLAYTIME_ALERT:
+                alerts.append(
                     {
-                        "ponto": f"Aspecto '{insight.get('aspecto')}' frequentemente criticado no gênero",
-                        "evidencia": {
-                            "tipo": "genre_insight",
-                            "aspecto": insight.get("aspecto"),
-                            "frequencia_positiva": pos,
-                            "frequencia_negativa": neg,
-                            "significancia": insight.get("significancia"),
-                        },
+                        "tipo": "primeiras_horas",
+                        "mensagem": f"A reclamação '{rotulo}' aparece sobretudo em quem jogou menos de 2h: afeta a primeira impressão.",
+                        "evidencia": {"destaque_id": highlight["id"], "pct_menos_2h": contexto.get("pct_menos_2h")},
                     }
                 )
-        # Match por substring: labels do RF usam "Alto Risco" / similares
-        if "Alto" in str(risco):
-            items.append(
+            if (contexto.get("pct_early_access") or 0) >= EARLY_ACCESS_ALERT:
+                alerts.append(
+                    {
+                        "tipo": "early_access",
+                        "mensagem": f"A reclamação '{rotulo}' se concentra em reviews feitas durante o early access.",
+                        "evidencia": {"destaque_id": highlight["id"], "pct_early_access": contexto.get("pct_early_access")},
+                    }
+                )
+        scored = [g for g in similar_games if g.get("pct_positivas") is not None]
+        low = [g for g in scored if g["pct_positivas"] < LOW_SCORE_THRESHOLD]
+        if scored and len(low) * 2 > len(scored):
+            alerts.append(
                 {
-                    "ponto": "Modelo estatístico indica risco comercial elevado no cenário pré-lançamento",
-                    "evidencia": {"tipo": "predicao_ml", "risco": risco},
+                    "tipo": "nicho_exigente",
+                    "mensagem": f"{len(low)} de {len(scored)} jogos similares têm menos de 70% de reviews positivas na Steam.",
+                    "evidencia": {"jogos": [{"titulo": g["titulo"], "pct_positivas": g["pct_positivas"]} for g in low]},
                 }
             )
-        return items[:8]
+        return alerts
 
-    def _opportunities(
-        self,
-        pitch: Dict[str, Any],
-        similares: Sequence[Dict[str, Any]],
-        insights: Sequence[Dict[str, Any]],
-    ) -> List[Dict[str, Any]]:
-        """Preço abaixo da média dos similares e aspectos positivos significativos (p<0.05)."""
-        items: List[Dict[str, Any]] = []
-        price = pitch.get("price_brl")
-        if price is not None and similares:
-            prices = [
-                float(g["preco_brl"])
-                for g in similares
-                if g.get("preco_brl") is not None
-            ]
-            if prices:
-                avg = sum(prices) / len(prices)
-                if float(price) < avg:
-                    items.append(
-                        {
-                            "ponto": "Preço planejado abaixo da média dos jogos similares",
-                            "evidencia": {
-                                "tipo": "preco",
-                                "preco_pitch": price,
-                                "preco_medio_similares": round(avg, 2),
-                            },
-                        }
-                    )
-        # "significativo" vem do qui-quadrado em absa/significance.py (populando genre_insights)
-        for insight in insights:
-            if insight.get("significativo") and int(insight.get("frequencia_positiva") or 0) > int(
-                insight.get("frequencia_negativa") or 0
-            ):
-                items.append(
-                    {
-                        "ponto": f"Enfatizar '{insight.get('aspecto')}' na página Steam / trailer",
-                        "evidencia": {
-                            "tipo": "genre_insight",
-                            "aspecto": insight.get("aspecto"),
-                            "significancia": insight.get("significancia"),
-                        },
-                    }
-                )
-        return items[:8]
 
-    def _risks(
-        self,
-        risco: str,
-        chance: Optional[float],
-        insights: Sequence[Dict[str, Any]],
-        similares: Sequence[Dict[str, Any]],
-    ) -> List[Dict[str, Any]]:
-        """Sempre inclui a classe do RF; alerta se RAG vazio ou aspectos negativos significativos."""
-        items: List[Dict[str, Any]] = [
-            {
-                "ponto": f"Classificação estatística: {risco}",
-                "evidencia": {
-                    "tipo": "predicao_ml",
-                    "risco": risco,
-                    "chance_sucesso_estimada_pct": chance,
-                },
-            }
-        ]
-        if not similares:
-            items.append(
-                {
-                    "ponto": "Poucos ou nenhum jogo similar encontrado na base histórica",
-                    "evidencia": {"tipo": "retrieval", "k": 0},
-                }
-            )
-        for insight in insights:
-            if insight.get("significativo") and int(insight.get("frequencia_negativa") or 0) > int(
-                insight.get("frequencia_positiva") or 0
-            ):
-                items.append(
-                    {
-                        "ponto": f"Risco de rejeição no aspecto '{insight.get('aspecto')}'",
-                        "evidencia": {
-                            "tipo": "genre_insight",
-                            "aspecto": insight.get("aspecto"),
-                            "significancia": insight.get("significancia"),
-                        },
-                    }
-                )
-        return items[:8]
+def template_sentence(highlight: Dict[str, Any]) -> str:
+    """Frase determinística (fallback e referência para o validador da Gemini)."""
+    metricas = highlight["metricas"]
+    rotulo = highlight["tema"]["rotulo"]
+    pct = round((metricas.get("prevalencia") or 0) * 100)
+    jogos = metricas.get("jogos_distintos") or 0
+    exemplos = [j["titulo"] for j in highlight.get("jogos_exemplo", [])[:2] if j.get("titulo")]
+    exemplos_txt = f", como em {' e '.join(exemplos)}" if exemplos else ""
+    escopo_txt = (
+        "dos jogos similares ao seu"
+        if highlight["escopo"] == "similares"
+        else f"de {highlight.get('genero') or 'jogos do gênero'}"
+    )
+    if highlight["tema"]["polaridade"] == "positivo":
+        return (
+            f"Jogadores valorizam {rotulo}: o tema aparece em {pct}% das reviews {escopo_txt}, "
+            f"em {jogos} jogos diferentes{exemplos_txt}."
+        )
+    return (
+        f"Reclamação recorrente: {rotulo}. Citada em {pct}% das reviews {escopo_txt}, "
+        f"em {jogos} jogos diferentes{exemplos_txt}."
+    )
+
+
+def coverage(
+    similar_reviews: int, genre_stats: Sequence[Dict[str, Any]], themes_total: int
+) -> Dict[str, Optional[int]]:
+    genre_reviews = max((s.get("total_reviews") or 0 for s in genre_stats), default=0)
+    return {
+        "reviews_analisadas_similares": similar_reviews,
+        "reviews_analisadas_genero": genre_reviews,
+        "temas_disponiveis": themes_total,
+    }
