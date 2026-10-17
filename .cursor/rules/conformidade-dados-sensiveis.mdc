@@ -23,7 +23,7 @@ Qualquer código que violar isso — mesmo que pareça uma melhoria funcional �
 
 ## O que fazer ao invés de perfilar usuários
 
-Se a tarefa pedida parecer estar pedindo personas/perfis de jogadores, direcione para o padrão já validado do projeto: agregações por **gênero** a partir de `genre_insights` (aspecto + sentimento extraídos de reviews, sem vínculo a indivíduo) — nunca por usuário.
+Se a tarefa pedida parecer estar pedindo personas/perfis de jogadores, direcione para o padrão já validado do projeto: agregações por **gênero/tema** a partir de `theme_stats` (temas de aspecto + sentimento extraídos de reviews, sem vínculo a indivíduo) — nunca por usuário.
 
 ## Ao gerar documentação
 

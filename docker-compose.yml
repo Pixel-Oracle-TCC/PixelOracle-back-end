@@ -1,7 +1,7 @@
 # Pixel Oracle — Postgres+pgvector + ML (8000) + API principal (3000)
 # Uso: docker compose up --build
-# Pré-requisito ML: artefatos em ml-service/artifacts/ (python ml/train.py)
-# Schema: aplicado automaticamente no primeiro start do serviço db (001_schema.sql)
+# Schema: todas as migrations rodam no primeiro start do serviço db (volume vazio).
+# Banco já existente: rode `python scripts/apply_schema.py` no ml-service (idempotente).
 
 services:
   db:
@@ -15,7 +15,7 @@ services:
       POSTGRES_DB: pixeloracle
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./ml-service/db/migrations/001_schema.sql:/docker-entrypoint-initdb.d/001_schema.sql:ro
+      - ./ml-service/db/migrations:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U pixel -d pixeloracle"]
       interval: 5s
@@ -31,12 +31,8 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./ml-service/artifacts:/app/artifacts:ro
       - ./ml-service/data:/app/data:ro
     environment:
-      DATA_SOURCE: json
-      DATA_JSON_PATH: data/database_steam_br.json
-      INCLUDE_REVIEW_FEATURES: "false"
       DATABASE_URL: postgresql://pixel:pixel@db:5432/pixeloracle
       EMBEDDING_MODEL: all-MiniLM-L6-v2
       SIMILAR_GAMES_TOP_K: "5"

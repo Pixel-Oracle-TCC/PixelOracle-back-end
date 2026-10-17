@@ -1,0 +1,21 @@
+{
+  "experimento": "collect_reviews",
+  "executado_em_utc": "20261017T133546Z",
+  "parametros": {
+    "helpful_positive": 25,
+    "helpful_negative": 25,
+    "proportional_per_language": 50,
+    "languages": [
+      "brazilian",
+      "english"
+    ],
+    "ordem": "round_robin_genero",
+    "nota_proporcional": "filter=recent (últimas semanas), não vida inteira do jogo; limite é por idioma"
+  },
+  "jogos_planejados": 3,
+  "appids": [
+    2694490,
+    3240220,
+    730
+  ]
+}

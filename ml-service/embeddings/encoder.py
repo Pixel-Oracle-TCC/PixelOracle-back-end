@@ -15,7 +15,8 @@ from typing import List, Optional, Sequence
 logger = logging.getLogger(__name__)
 
 DEFAULT_MODEL = "all-MiniLM-L6-v2"
-EMBEDDING_DIM = 384
+# Resumos de aspecto são em português: modelo multilíngue, também com 384 dims
+DEFAULT_ASPECT_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"
 
 
 class EmbeddingEncoder:
@@ -26,7 +27,7 @@ class EmbeddingEncoder:
         self._model = None
 
     def _load(self):
-        # Lazy load: a 1ª chamada é lenta; evita travar o boot se /predict for o único uso
+        # Lazy load: a 1ª chamada é lenta; evita travar o boot do serviço
         if self._model is None:
             from sentence_transformers import SentenceTransformer
 
@@ -66,3 +67,9 @@ class EmbeddingEncoder:
 def get_encoder() -> EmbeddingEncoder:
     """Singleton: não recarregar o modelo a cada request."""
     return EmbeddingEncoder()
+
+
+@lru_cache(maxsize=1)
+def get_aspect_encoder() -> EmbeddingEncoder:
+    """Encoder dos resumos de aspecto (uso offline em scripts/cluster_themes.py)."""
+    return EmbeddingEncoder(os.getenv("ASPECT_EMBEDDING_MODEL", DEFAULT_ASPECT_MODEL))

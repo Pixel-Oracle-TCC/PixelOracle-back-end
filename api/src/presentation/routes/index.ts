@@ -11,7 +11,6 @@ export function createRoutes(
   const controller = createReportController(generateReport, mlService);
 
   router.get("/health", controller.health);
-  router.post("/predict", controller.predictOnly);
   router.post("/report", controller.fullReport);
 
   return router;

@@ -10,7 +10,6 @@ CREATE TABLE IF NOT EXISTS games (
     descricao TEXT,
     preco_brl NUMERIC,
     release_year INT,
-    owners_estimados INT,
     raw_metadata JSONB,
     embedding VECTOR(384),
     created_at TIMESTAMP DEFAULT now()
@@ -52,13 +51,6 @@ CREATE TABLE IF NOT EXISTS genre_insights (
     resumo TEXT,
     updated_at TIMESTAMP DEFAULT now(),
     UNIQUE (genre_id, aspecto)
-);
-
-CREATE TABLE IF NOT EXISTS triangulation_reports (
-    id SERIAL PRIMARY KEY,
-    projeto_pitch JSONB,
-    resultado JSONB,
-    created_at TIMESTAMP DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS absa_gold_standard (
