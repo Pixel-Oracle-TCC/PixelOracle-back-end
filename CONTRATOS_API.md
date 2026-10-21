@@ -214,3 +214,71 @@ Mesmo body de `/analyze`. Campos do formulário antigo (`categories`, `release_y
 ### Histórico de mudanças
 - 2026-10-14: `/api/report` chama `/analyze`; validador pós-Gemini de jogos citados.
 - 2026-09-10: `/api/report` chama `/triangulate`; Gemini só redige o dashboard.
+
+---
+
+## GET /kpis/dashboard (api principal, consumido por: frontend)
+
+Agregados do catálogo Steam no Postgres. Exige `DATABASE_URL`. Só dados de jogo (sem autor).
+
+`releases` cobre os últimos 12 meses (data de lançamento em `games.release_date`).
+`pctFree` usa `preco_brl = 0`. `medianPrice` ignora preço 0. `avgPositiveRate` usa o último `review_snapshots` por jogo.
+`genres` é a fatia do catálogo com cada gênero Steam (`games` ⋈ `game_genres` ⋈ `genres`). Um jogo pode ter vários gêneros, então a soma das `%` passa de 100.
+
+### Response
+```json
+{
+  "status": "sucesso",
+  "data": {
+    "overview": {
+      "totalGames": 110,
+      "pctFree": 12.5,
+      "medianPrice": 29.99,
+      "avgPositiveRate": 84.2
+    },
+    "releases": [
+      { "month": "2025-10", "releases": 4, "pctFree": 25.0 }
+    ],
+    "genres": [
+      { "genre": "Indie", "games": 80, "pct": 72.7 }
+    ]
+  }
+}
+```
+
+`medianPrice` e `avgPositiveRate` podem ser `null` se não houver preço pago ou snapshot de reviews.
+
+### Histórico de mudanças
+- 2026-10-20: `genres` adicionado à resposta (retrocompatível).
+- 2026-10-20: endpoint criado.
+
+---
+
+## GET /kpis/releases (api principal, consumido por: frontend)
+
+Série mensal de lançamentos. Query: `from` e `to` em `YYYY-MM-DD`, `from <= to`, intervalo máximo de 5 anos.
+
+### Request
+`GET /kpis/releases?from=2024-01-01&to=2024-12-31`
+
+### Response (200)
+```json
+{
+  "status": "sucesso",
+  "data": [
+    { "month": "2024-01", "releases": 8, "pctFree": 12.5 }
+  ]
+}
+```
+
+### Response (400)
+```json
+{
+  "status": "erro",
+  "mensagem": "Parâmetros de data inválidos.",
+  "erros": [{ "campo": "from", "mensagem": "Use o formato YYYY-MM-DD." }]
+}
+```
+
+### Histórico de mudanças
+- 2026-10-20: endpoint criado.
