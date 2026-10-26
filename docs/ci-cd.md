@@ -56,10 +56,12 @@ Disparo: pull request e push em `develop` e `main`. Uma execução nova cancela 
 Checks: `test`, `build`, `audit`, `secrets`.
 
 - Node 22, `npm ci`
-- `npm test -- --watch=false`
+- `npm test -- --watch=false` (app, formulário de pitch e formatadores)
 - `npm run build` (o typecheck acontece no build)
 - `npm audit --audit-level=critical`
 - Gitleaks em todo PR e nos pushes de `develop` e `main`
+
+O resumo dos testes fica na aba Summary do check `test`.
 
 O `package.json` do frontend fixa `piscina` em 5.3.2 (`overrides`). O `@angular/build` 21.2.8 puxava 5.1.4, que o audit marca como crítica. Avisos high continuam fora desse gate.
 
@@ -70,10 +72,11 @@ Não há ESLint. Prettier não é gate: o repositório ainda não está formatad
 Check: `api`. Só roda se o PR ou o push mexer em `api/**` (ou no próprio workflow).
 
 - Node 20, igual ao `api/Dockerfile`
+- `npm test` — testes unitários de `parseGamePitch`
 - `npm run typecheck`, `npm run build`, `npm audit --audit-level=critical`
 - `docker build` da API
 
-Não há suíte de testes da API. O gate é typecheck, build e imagem.
+O resumo dos testes fica na aba Summary do check `api`.
 
 ### ML (`.github/workflows/ci-ml.yml`)
 
@@ -83,7 +86,7 @@ Check: `ml`. Só roda se mexer em `ml-service/**`.
 - `pip install -r ml-service/requirements-ci.txt` (numpy, pandas, scipy, scikit-learn, requests)
 - `python scripts/test_pipeline.py`
 
-`requirements-ci.txt` deixa Torch e `sentence-transformers` de fora. O pin de `scikit-learn` acompanha `requirements.txt`.
+O resumo fica na aba Summary do check `ml`. `requirements-ci.txt` deixa Torch e `sentence-transformers` de fora. O pin de `scikit-learn` acompanha `requirements.txt`.
 
 ### Compose (`.github/workflows/ci-compose.yml`)
 
@@ -96,6 +99,10 @@ Check: `secrets`. Roda em todo PR e nos pushes de `develop` e `main`, sem filtro
 Esse check da API nasce vermelho: o commit `65e1a10` gravou uma chave Gemini em `api/.env.example`. O arquivo atual está vazio, mas a chave continua no histórico. Revogue a chave no Google AI Studio e tire o commit do histórico antes de tornar `secrets` obrigatório.
 
 Dependabot (`.github/dependabot.yml`) abre PR semanal de npm em `api/`, pip em `ml-service/` e GitHub Actions. Updates minor e patch vão agrupados.
+
+## Pull request
+
+Os dois repositórios têm `.github/PULL_REQUEST_TEMPLATE.md`. Ao abrir um PR pela interface do GitHub, a descrição já vem em português, com o que muda, como validar e o checklist. O histórico do que entrou em cada entrega está no `CHANGELOG.md` de cada repo.
 
 ## Branch protection
 
