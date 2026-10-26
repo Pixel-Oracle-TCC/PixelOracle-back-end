@@ -96,7 +96,7 @@ Check: `compose`. Roda quando mudam `docker-compose.yml` ou os Dockerfiles. `doc
 
 Check: `secrets`. Roda em todo PR e nos pushes de `develop` e `main`, sem filtro de pasta. O binário aberto do Gitleaks 8.30.1 varre o histórico do git. A action oficial pede licença em repositório de organização (`Pixel-Oracle-TCC`), então o workflow não usa ela.
 
-Esse check da API nasce vermelho: o commit `65e1a10` gravou uma chave Gemini em `api/.env.example`. O arquivo atual está vazio, mas a chave continua no histórico. Revogue a chave no Google AI Studio e tire o commit do histórico antes de tornar `secrets` obrigatório.
+A chave que chegou a entrar em `api/.env.example` foi apagada do histórico. O exemplo segue sem valor. Se aquela chave ainda estiver ativa no Google AI Studio, revogue.
 
 Dependabot (`.github/dependabot.yml`) abre PR semanal de npm em `api/`, pip em `ml-service/` e GitHub Actions. Updates minor e patch vão agrupados.
 
