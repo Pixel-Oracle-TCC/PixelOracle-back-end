@@ -19,5 +19,5 @@ pgvector>=0.3.0
 sentence-transformers>=3.0.0
 
 # Coleta e ABSA
-requests>=2.31.0
+requests>=2.34.2
 scipy>=1.11.0  # qui-quadrado / significância dos temas
