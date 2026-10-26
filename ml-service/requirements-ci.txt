@@ -1,0 +1,9 @@
+# Subconjunto para o CI (scripts/test_pipeline.py).
+# Não inclui torch, sentence-transformers, FastAPI nem o driver do Postgres:
+# esses testes não importam nada disso.
+# scikit-learn fica no mesmo pin de requirements.txt.
+numpy>=1.24.0
+pandas>=2.0.0
+scipy>=1.11.0
+scikit-learn==1.6.1
+requests>=2.31.0
