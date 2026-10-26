@@ -16,7 +16,7 @@ pgvector>=0.3.0
 
 # Embeddings / RAG
 # No Docker, o Dockerfile instala torch CPU ANTES desta linha (evita CUDA).
-sentence-transformers>=3.0.0
+sentence-transformers>=6.2.0
 
 # Coleta e ABSA
 requests>=2.31.0
