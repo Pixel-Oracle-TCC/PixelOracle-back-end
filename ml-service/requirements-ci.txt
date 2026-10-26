@@ -3,7 +3,7 @@
 # esses testes não importam nada disso.
 # scikit-learn fica no mesmo pin de requirements.txt.
 numpy>=1.24.0
-pandas>=2.0.0
+pandas>=3.1.0
 scipy>=1.11.0
 scikit-learn==1.6.1
 requests>=2.31.0
