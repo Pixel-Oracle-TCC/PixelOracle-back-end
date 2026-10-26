@@ -25,7 +25,7 @@ reais**, extraídas de reviews públicas da Steam de jogos parecidos com o dele:
 Conformidade: **nenhum dado de autor** é guardado (sem `steamid`, sem perfil). Dedup por
 `recommendationid`. Temas são agregados por gênero/jogo, nunca por pessoa (ToS Steam cláusula 2 + LGPD).
 
-Documentação de produto/arquitetura: vault Obsidian `TCC/` · contratos: [`CONTRATOS_API.md`](CONTRATOS_API.md) · Docker: [`DOCKER.md`](DOCKER.md).
+Documentação de produto/arquitetura: vault Obsidian `TCC/` · contratos: [`CONTRATOS_API.md`](CONTRATOS_API.md) · Docker: [`DOCKER.md`](DOCKER.md) · entrega: [`docs/ci-cd.md`](docs/ci-cd.md) · histórico: [`CHANGELOG.md`](CHANGELOG.md).
 
 ---
 

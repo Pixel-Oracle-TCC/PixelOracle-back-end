@@ -38,4 +38,19 @@ jobs:
 
       - name: Test pipeline
         working-directory: ml-service
-        run: python scripts/test_pipeline.py
+        run: |
+          set -o pipefail
+          python scripts/test_pipeline.py 2>&1 | tee "$RUNNER_TEMP/ml-test.log"
+
+      - name: Resumo da validação
+        if: always()
+        run: |
+          {
+            echo "## Validação do ML"
+            echo ""
+            echo "Testes sintéticos do pipeline de reviews, sem banco e sem rede."
+            echo ""
+            echo '```'
+            tail -n 40 "$RUNNER_TEMP/ml-test.log" 2>/dev/null || echo "O log de testes não foi gerado."
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

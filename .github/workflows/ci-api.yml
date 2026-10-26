@@ -37,6 +37,25 @@ jobs:
         working-directory: api
         run: npm ci
 
+      - name: Testes unitários
+        working-directory: api
+        run: |
+          set -o pipefail
+          npm test 2>&1 | tee "$RUNNER_TEMP/api-test.log"
+
+      - name: Resumo da validação
+        if: always()
+        run: |
+          {
+            echo "## Validação da API"
+            echo ""
+            echo "Testes unitários do contrato de entrada (\`parseGamePitch\`, usado no \`POST /api/report\`)."
+            echo ""
+            echo '```'
+            tail -n 40 "$RUNNER_TEMP/api-test.log" 2>/dev/null || echo "O log de testes não foi gerado."
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Typecheck
         working-directory: api
         run: npm run typecheck
