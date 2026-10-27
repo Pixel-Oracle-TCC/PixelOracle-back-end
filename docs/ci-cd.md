@@ -49,7 +49,7 @@ Feature flags do manual (`ff_recomendacoes_generativas` e similares) ficam para 
 
 ## O que o CI faz hoje
 
-Disparo: pull request e push em `develop` e `main`. Uma execução nova cancela a anterior do mesmo ref. Permissão dos workflows: só leitura do código.
+Disparo: pull request e push em `develop` e `main`. Uma execução nova cancela a anterior do mesmo ref. Permissão dos workflows: leitura do código. O job que publica o comentário no pull request também pode escrever nesse pull request.
 
 ### Frontend (`Pixel-Oracle-FrontEnd/.github/workflows/ci.yml`)
 
@@ -61,7 +61,7 @@ Checks: `test`, `build`, `audit`, `secrets`.
 - `npm audit --audit-level=critical`
 - Gitleaks em todo PR e nos pushes de `develop` e `main`
 
-O resumo dos testes fica na aba Summary do check `test`.
+O resumo dos testes fica na aba Summary do check `test`. O mesmo job comenta no pull request a contagem e se `mapFormToGamePitch` exercitou o `POST /api/report`. O selo do workflow fica no README.
 
 O `package.json` do frontend fixa `piscina` em 5.3.2 (`overrides`). O `@angular/build` 21.2.8 puxava 5.1.4, que o audit marca como crítica. Avisos high continuam fora desse gate.
 
@@ -76,7 +76,7 @@ Check: `api`. Só roda se o PR ou o push mexer em `api/**` (ou no próprio workf
 - `npm run typecheck`, `npm run build`, `npm audit --audit-level=critical`
 - `docker build` da API
 
-O resumo dos testes fica na aba Summary do check `api`.
+O resumo dos testes fica na aba Summary do check `api`. O mesmo job comenta no pull request a contagem e se `parseGamePitch` exercitou o `POST /api/report`. Os selos dos workflows ficam no README.
 
 ### ML (`.github/workflows/ci-ml.yml`)
 
