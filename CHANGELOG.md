@@ -14,6 +14,8 @@ Nada aguardando publicação além do que está na `main`.
 - Testes unitários de `parseGamePitch`, o contrato de entrada do `POST /api/report`.
 - Resumo da validação na aba Summary do check, com a saída dos testes.
 - Modelo de pull request em português (`.github/PULL_REQUEST_TEMPLATE.md`).
+- Selos de CI no README.
+- Comentário no pull request com a contagem dos testes de `parseGamePitch` e se o contrato de `POST /api/report` foi exercitado.
 - Branch `develop`, ao lado de `main`.
 - Contrato de ambientes em [`docs/ci-cd.md`](docs/ci-cd.md): DEV, homologação e produção, ainda sem deploy.
 

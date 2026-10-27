@@ -5,11 +5,15 @@ on:
     paths:
       - "api/**"
       - ".github/workflows/ci-api.yml"
+      - ".github/scripts/pull-request-comment.mjs"
+      - ".github/scripts/pull-request-comment.test.mjs"
   push:
     branches: [develop, main]
     paths:
       - "api/**"
       - ".github/workflows/ci-api.yml"
+      - ".github/scripts/pull-request-comment.mjs"
+      - ".github/scripts/pull-request-comment.test.mjs"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -17,6 +21,7 @@ concurrency:
 
 permissions:
   contents: read
+  pull-requests: write
 
 jobs:
   api:
@@ -55,6 +60,21 @@ jobs:
             tail -n 40 "$RUNNER_TEMP/api-test.log" 2>/dev/null || echo "O log de testes não foi gerado."
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Testa o texto do comentário
+        if: always()
+        run: node --test .github/scripts/pull-request-comment.test.mjs
+
+      - name: Comenta o pull request
+        if: always() && github.event_name == 'pull_request'
+        env:
+          CI_LOG: ${{ runner.temp }}/api-test.log
+          CI_FORMAT: node
+          CI_CHECK: api
+          CI_MARKER: pixel-oracle-ci:api
+          CI_CONTRACT_LABEL: parseGamePitch
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node .github/scripts/pull-request-comment.mjs
 
       - name: Typecheck
         working-directory: api
