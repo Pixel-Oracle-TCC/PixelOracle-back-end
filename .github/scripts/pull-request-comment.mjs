@@ -38,10 +38,56 @@ export function summarizeTestLog(raw, format) {
     };
   }
 
+  if (format === "python") {
+    const passed = lastNumber(log, /✅ (\d+) testes sintéticos OK/g);
+    if (passed == null) return { found: false, passed: null, failed: null };
+    return { found: true, passed, failed: 0 };
+  }
+
   return { found: false, passed: null, failed: null };
 }
 
-export function renderComment({ marker, check, summary, contractLabel }) {
+export function labelOutcome(outcome) {
+  if (outcome === "success") return "passou";
+  if (outcome === "failure") return "falhou";
+  if (!outcome || outcome === "skipped") return "não rodou";
+  return outcome;
+}
+
+function testDetail(summary) {
+  if (!summary?.found) return "Não li a contagem no log";
+  return `${summary.passed} passaram, ${summary.failed} falharam`;
+}
+
+export function parseRows(text, summary) {
+  if (!text?.trim()) return [];
+  return text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [stage, outcome, detail] = line.split("|");
+      const clean = (detail ?? "").trim();
+      return {
+        stage: stage.trim(),
+        outcome: (outcome ?? "").trim(),
+        detail: clean === "tests" ? testDetail(summary) : clean,
+      };
+    });
+}
+
+export function renderSummary({ title, rows }) {
+  return [
+    `## ${title}`,
+    "",
+    "| Etapa | Resultado | Detalhe |",
+    "|-------|-----------|---------|",
+    ...rows.map((row) => `| ${row.stage} | ${labelOutcome(row.outcome)} | ${row.detail} |`),
+    "",
+  ].join("\n");
+}
+
+export function renderComment({ marker, check, summary, contractLabel, rows = [] }) {
   const tests = summary.found
     ? `${summary.passed} passaram, ${summary.failed} falharam`
     : "Não li a contagem no log";
@@ -49,15 +95,25 @@ export function renderComment({ marker, check, summary, contractLabel }) {
   if (summary.found && summary.failed === 0) contract = `Exercitado por \`${contractLabel}\``;
   if (summary.found && summary.failed > 0) contract = `Rodou (\`${contractLabel}\`), com falha`;
 
+  const table = rows.length
+    ? [
+        "| Etapa | Resultado | Detalhe |",
+        "|-------|-----------|---------|",
+        ...rows.map((row) => `| ${row.stage} | ${labelOutcome(row.outcome)} | ${row.detail} |`),
+      ]
+    : [
+        "| Check | Testes | Contrato `POST /api/report` |",
+        "|-------|--------|------------------------------|",
+        `| \`${check}\` | ${tests} | ${contract} |`,
+      ];
+
   return [
     `<!-- ${marker} -->`,
     "## Validação no pull request",
     "",
-    "| Check | Testes | Contrato `POST /api/report` |",
-    "|-------|--------|------------------------------|",
-    `| \`${check}\` | ${tests} | ${contract} |`,
+    ...table,
     "",
-    "A aba Summary deste check guarda o log.",
+    rows.length ? `Contrato \`POST /api/report\`: ${contract}` : "A aba Summary deste check guarda o quadro.",
     "",
   ].join("\n");
 }
@@ -108,18 +164,23 @@ async function main() {
   const logPath = process.env.CI_LOG;
   const raw = logPath && fs.existsSync(logPath) ? fs.readFileSync(logPath, "utf8") : "";
   const summary = summarizeTestLog(raw, process.env.CI_FORMAT);
+  const rows = parseRows(process.env.CI_ROWS, summary);
+  if (process.env.GITHUB_STEP_SUMMARY && rows.length) {
+    fs.appendFileSync(
+      process.env.GITHUB_STEP_SUMMARY,
+      renderSummary({ title: process.env.CI_TITLE || "Validação", rows }),
+    );
+  }
+
+  if (!process.env.CI_MARKER || process.env.GITHUB_EVENT_NAME !== "pull_request") return;
+
   const body = renderComment({
     marker: process.env.CI_MARKER,
     check: process.env.CI_CHECK,
     summary,
     contractLabel: process.env.CI_CONTRACT_LABEL,
+    rows,
   });
-
-  if (process.env.GITHUB_EVENT_NAME !== "pull_request") {
-    console.log(body);
-    return;
-  }
-
   const event = JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH, "utf8"));
   const [owner, repo] = process.env.GITHUB_REPOSITORY.split("/");
   const result = await publish(owner, repo, event.pull_request.number, body, process.env.CI_MARKER, process.env.GITHUB_TOKEN);

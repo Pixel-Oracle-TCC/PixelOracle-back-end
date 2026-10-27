@@ -1,8 +1,6 @@
 # Pixel Oracle API
 
-[![CI API](https://github.com/Pixel-Oracle-TCC/PixelOracle-back-end/actions/workflows/ci-api.yml/badge.svg)](https://github.com/Pixel-Oracle-TCC/PixelOracle-back-end/actions/workflows/ci-api.yml)
-[![CI ML](https://github.com/Pixel-Oracle-TCC/PixelOracle-back-end/actions/workflows/ci-ml.yml/badge.svg)](https://github.com/Pixel-Oracle-TCC/PixelOracle-back-end/actions/workflows/ci-ml.yml)
-[![Segredos](https://github.com/Pixel-Oracle-TCC/PixelOracle-back-end/actions/workflows/security.yml/badge.svg)](https://github.com/Pixel-Oracle-TCC/PixelOracle-back-end/actions/workflows/security.yml)
+[![CI](https://github.com/Pixel-Oracle-TCC/PixelOracle-back-end/actions/workflows/ci.yml/badge.svg)](https://github.com/Pixel-Oracle-TCC/PixelOracle-back-end/actions/workflows/ci.yml)
 
 Monorepo do **Pixel Oracle** (TCC): mentoria pré-lançamento para desenvolvedores indie.
 

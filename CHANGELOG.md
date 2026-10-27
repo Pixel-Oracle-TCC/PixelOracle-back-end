@@ -16,6 +16,9 @@ Nada aguardando publicação além do que está na `main`.
 - Modelo de pull request em português (`.github/PULL_REQUEST_TEMPLATE.md`).
 - Selos de CI no README.
 - Comentário no pull request com a contagem dos testes de `parseGamePitch` e se o contrato de `POST /api/report` foi exercitado.
+- Um workflow só (`ci.yml`) desenha o pipeline `api`, `ml`, `compose` e `secrets`. O job que o diff não toca aparece como não rodou.
+- A execução no Actions tem nome legível e a aba Summary é um quadro de passou ou falhou, não um trecho de log.
+- A trava de merge em `main` e `develop` está desenhada (`secrets` obrigatório), mas o GitHub não aplica branch protection em repositório privado de organização no plano gratuito.
 - Branch `develop`, ao lado de `main`.
 - Contrato de ambientes em [`docs/ci-cd.md`](docs/ci-cd.md): DEV, homologação e produção, ainda sem deploy.
 
