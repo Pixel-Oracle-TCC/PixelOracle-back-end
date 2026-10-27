@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { renderComment, summarizeTestLog } from "./pull-request-comment.mjs";
+import { labelOutcome, parseRows, renderComment, renderSummary, summarizeTestLog } from "./pull-request-comment.mjs";
 
 test("lê a contagem TAP do node:test", () => {
   const log = "ok 1 - pitch válido\n# tests 5\n# pass 5\n# fail 0\n";
@@ -36,6 +36,23 @@ test("monta a tabela do contrato quando tudo passa", () => {
   assert.match(body, /<!-- pixel-oracle-ci:api -->/);
   assert.match(body, /5 passaram, 0 falharam/);
   assert.match(body, /Exercitado por `parseGamePitch`/);
+});
+
+test("lê o fechamento dos testes sintéticos do ML", () => {
+  const log = "  ✓ test_pitch\n✅ 15 testes sintéticos OK\n";
+  assert.deepEqual(summarizeTestLog(log, "python"), { found: true, passed: 15, failed: 0 });
+});
+
+test("monta o quadro com passou, falhou e não rodou", () => {
+  const rows = parseRows("Testes unitários|success|tests\nTypecheck|skipped|o TypeScript fecha\n", {
+    found: true,
+    passed: 5,
+    failed: 0,
+  });
+  const board = renderSummary({ title: "Validação da API", rows });
+  assert.equal(labelOutcome("failure"), "falhou");
+  assert.match(board, /Testes unitários \| passou \| 5 passaram, 0 falharam/);
+  assert.match(board, /Typecheck \| não rodou \| o TypeScript fecha/);
 });
 
 test("marca falha sem esconder que o contrato rodou", () => {
