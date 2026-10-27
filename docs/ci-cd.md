@@ -61,7 +61,7 @@ Checks: `test`, `build`, `audit`, `secrets`.
 - `npm audit --audit-level=critical`
 - Gitleaks em todo PR e nos pushes de `develop` e `main`
 
-A aba Summary de cada check é um quadro de passou ou falhou. O job `relatório` junta os quatro. O check `test` comenta no pull request a contagem e se `mapFormToGamePitch` exercitou o `POST /api/report`. O selo do workflow fica no README. `main` e `develop` exigem `test`, `build`, `audit` e `secrets` antes do merge.
+A aba Summary de cada check é um quadro de passou ou falhou. O job `relatório` junta os quatro. O check `test` comenta no pull request a contagem e se `mapFormToGamePitch` exercitou o `POST /api/report`. O selo do workflow fica no README. Os quatro checks são os que a trava de merge usaria; no plano gratuito de organização, com repositório privado, o GitHub não aplica essa trava.
 
 O `package.json` do frontend fixa `piscina` em 5.3.2 (`overrides`). O `@angular/build` 21.2.8 puxava 5.1.4, que o audit marca como crítica. Avisos high continuam fora desse gate.
 
@@ -88,14 +88,12 @@ Os dois repositórios têm `.github/PULL_REQUEST_TEMPLATE.md`. Ao abrir um PR pe
 
 ## Branch protection
 
-Em `main` e `develop` dos dois repositórios o merge exige pull request. Não há aprovação obrigatória de outra pessoa: o autor consegue mergear quando os checks passam.
-
-Checks obrigatórios, porque esses jobs sempre rodam:
+A regra desejada, quando o GitHub passar a aplicá-la:
 
 - Frontend: `test`, `build`, `audit`, `secrets`.
-- Backend: `secrets`.
+- Backend: só `secrets`. `api`, `ml` e `compose` ficam de fora, porque num pull request que não mexe neles o job aparece como "não rodou".
 
-`api`, `ml` e `compose` ficam de fora da trava. Num pull request que não mexe neles, o job aparece como "não rodou". Exigir esse nome bloqueia o merge à espera de um sucesso que não vai existir.
+Os dois repositórios são privados e a organização está no plano gratuito. O GitHub mostra que a regra não é aplicada até a organização ir para o plano Team, ou até o repositório ficar público. Por isso o botão de merge ainda não trava.
 
 ## O que fica para o CD
 
