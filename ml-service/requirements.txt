@@ -8,10 +8,13 @@ python-dotenv>=1.0.0
 scikit-learn==1.6.1
 pandas>=2.0.0
 numpy>=1.24.0
+matplotlib>=3.8.0  # heatmap PNG em memória (Agg + BytesIO)
+seaborn>=0.13.0    # sns.heatmap do endpoint /correlation-heatmap
 
 # Postgres + pgvector
 SQLAlchemy>=2.0.0
 psycopg2-binary>=2.9.9
+psycopg[binary]>=3.1.0  # pandas 2.2+ / SQLAlchemy 2 pedem o driver v3 (`import psycopg`)
 pgvector>=0.3.0
 
 # Embeddings / RAG

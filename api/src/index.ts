@@ -13,7 +13,7 @@ import { GenerateFullReportUseCase } from "./application/use-cases/GenerateFullR
 import { FallbackInsightsService, GeminiService } from "./services/geminiService.js";
 import { MlService } from "./services/mlService.js";
 import { errorHandler } from "./presentation/middleware/errorHandler.js";
-import { dashboardRoutes } from "./presentation/routes/dashboard.routes.js";
+import { createDashboardRoutes } from "./presentation/routes/dashboard.routes.js";
 import { createRoutes } from "./presentation/routes/index.js";
 
 const PORT = Number(process.env.PORT ?? 3000);
@@ -51,7 +51,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use("/api", createRoutes(generateFullReport, mlService));
-app.use("/kpis", dashboardRoutes);
+app.use("/kpis", createDashboardRoutes(mlService));
 
 app.use(errorHandler);
 
@@ -59,5 +59,7 @@ app.listen(PORT, () => {
   console.log(`🚀 Pixel Oracle — API principal (dashboard de evidências de reviews)`);
   console.log(`   http://localhost:${PORT}`);
   console.log(`   ML: ${ML_SERVICE_URL}`);
-  console.log(`   Rotas: GET /api/health | POST /api/report | GET /kpis/dashboard | GET /kpis/releases`);
+  console.log(
+    `   Rotas: GET /api/health | POST /api/report | GET /kpis/dashboard | GET /kpis/releases | GET /kpis/correlation-heatmap`
+  );
 });

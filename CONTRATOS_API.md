@@ -23,7 +23,7 @@ Sempre responde 200 (o healthcheck do Docker não pode cair por banco vazio).
   "status": "online",
   "modo": "pre-lancamento",
   "database_configured": true,
-  "endpoints": ["/", "/health", "/retrieve-similar", "/analyze"],
+  "endpoints": ["/", "/health", "/retrieve-similar", "/analyze", "/correlation-heatmap"],
   "database_ok": true,
   "contagens": {
     "games": 110, "reviews": 1200, "review_aspects": 2500,
@@ -33,6 +33,7 @@ Sempre responde 200 (o healthcheck do Docker não pode cair por banco vazio).
 ```
 
 ### Histórico de mudanças
+- 2026-11-02: `endpoints` passa a listar `/correlation-heatmap`.
 - 2026-10-14: removidos `model_loaded`, `features`, `include_review_features`, `mensagem`; adicionados `database_ok` e `contagens`.
 - 2026-09-10: endpoint `/health` explícito; campo `database_configured` adicionado.
 
@@ -282,3 +283,30 @@ Série mensal de lançamentos. Query: `from` e `to` em `YYYY-MM-DD`, `from <= to
 
 ### Histórico de mudanças
 - 2026-10-20: endpoint criado.
+
+---
+
+## GET /correlation-heatmap (ml-service, consumido por: api principal `/kpis/correlation-heatmap`)
+
+PNG em memória (sem arquivo em disco). Matriz de correlação de Pearson entre variáveis numéricas do catálogo: `positive_reviews`, `negative_reviews`, `genre_id`, `publisher_id`, `release_year`, `release_date` (dias desde 1970-01-01), `price` (`preco_brl`), `total_reviews` (`total_reviews_steam`) e `rank_popularidade`. Gênero e publicadora entram como ID; **todas** as IDs do jogo entram (produto cartesiano gênero × publicadora; preço/reviews se repetem). Sem one-hot, sem `game_id` e sem identificador de autor.
+
+### Response
+`Content-Type: image/png` — heatmap `coolwarm` (`vmin=-1`, `vmax=1`). Anotações `.2f` só se houver no máximo 18 variáveis.
+
+### Histórico de mudanças
+- 2026-11-02: todas as IDs de gênero e publicadora por jogo entram na matriz (não só um `MIN(id)`).
+- 2026-11-02: gênero passa a `genre_id`; entram `release_date`, `price`, `total_reviews`, `rank_popularidade`, `release_year`.
+- 2026-11-02: publicadora passa a entrar como `publisher_id` (não one-hot por nome).
+- 2026-11-02: endpoint criado.
+
+---
+
+## GET /kpis/correlation-heatmap (api principal, consumido por: frontend)
+
+Proxy do PNG gerado em `/correlation-heatmap` no ml-service.
+
+### Response
+`Content-Type: image/png`
+
+### Histórico de mudanças
+- 2026-11-02: endpoint criado.
