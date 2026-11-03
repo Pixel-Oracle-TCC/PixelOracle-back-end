@@ -1,0 +1,148 @@
+[
+  {
+    "id": 1,
+    "texto": "O combate é viciante e a progressão é muito bem feita, mas a dificuldade é mal balanceada. Gráficos lindos. Crasha toda hora.",
+    "eixos": {
+      "mecanica": {"aspectos": ["+", "+", "-"], "rotulo": "Misto (+)"},
+      "narrativa": {"aspectos": [], "rotulo": "Não mencionado"},
+      "estetica": {"aspectos": ["+"], "rotulo": "Positivo"},
+      "tecnologia": {"aspectos": ["-"], "rotulo": "Negativo"}
+    },
+    "flags": []
+  },
+  {
+    "id": 2,
+    "texto": "História fraca e personagens sem carisma, mas a trilha sonora é incrível e o gameplay compensa.",
+    "eixos": {
+      "mecanica": {"aspectos": ["+"], "rotulo": "Positivo"},
+      "narrativa": {"aspectos": ["-", "-"], "rotulo": "Negativo"},
+      "estetica": {"aspectos": ["+"], "rotulo": "Positivo"},
+      "tecnologia": {"aspectos": [], "rotulo": "Não mencionado"}
+    },
+    "flags": []
+  },
+  {
+    "id": 3,
+    "texto": "Jogo de sobrevivência em mundo aberto, dá pra jogar em co-op com até 4 pessoas. Roda a 60 FPS no meu PC. Tem umas 40h de campanha.",
+    "eixos": {
+      "mecanica": {"aspectos": ["0", "0", "0"], "rotulo": "Neutro"},
+      "narrativa": {"aspectos": [], "rotulo": "Não mencionado"},
+      "estetica": {"aspectos": [], "rotulo": "Não mencionado"},
+      "tecnologia": {"aspectos": ["0"], "rotulo": "Neutro"}
+    },
+    "flags": []
+  },
+  {
+    "id": 4,
+    "texto": "10/10, adoro perder 3 horas de progresso porque o save corrompeu. Muito divertido.",
+    "eixos": {
+      "mecanica": {"aspectos": [], "rotulo": "Não mencionado"},
+      "narrativa": {"aspectos": [], "rotulo": "Não mencionado"},
+      "estetica": {"aspectos": [], "rotulo": "Não mencionado"},
+      "tecnologia": {"aspectos": ["-"], "rotulo": "Negativo"}
+    },
+    "flags": ["IRONIA"],
+    "nota": "Divertido é irônico e o alvo é o save. A função não detecta ironia; ela só confere a contagem que a pessoa já fez."
+  },
+  {
+    "id": 5,
+    "texto": "Pior que o primeiro em tudo: a história é pior, o combate é pior, mas pelo menos visualmente está melhor.",
+    "eixos": {
+      "mecanica": {"aspectos": ["-"], "rotulo": "Negativo"},
+      "narrativa": {"aspectos": ["-"], "rotulo": "Negativo"},
+      "estetica": {"aspectos": ["+"], "rotulo": "Positivo"},
+      "tecnologia": {"aspectos": [], "rotulo": "Não mencionado"}
+    },
+    "flags": []
+  },
+  {
+    "id": 6,
+    "texto": "Se você curte jogo difícil, vai gostar. Para mim cansou rápido, é tudo muito repetitivo.",
+    "eixos": {
+      "mecanica": {"aspectos": ["0", "-", "-"], "rotulo": "Negativo"},
+      "narrativa": {"aspectos": [], "rotulo": "Não mencionado"},
+      "estetica": {"aspectos": [], "rotulo": "Não mencionado"},
+      "tecnologia": {"aspectos": [], "rotulo": "Não mencionado"}
+    },
+    "flags": []
+  },
+  {
+    "id": 7,
+    "texto": "Bom jogo, mas caro demais pelo que entrega. Dev abandonou e a comunidade é tóxica.",
+    "eixos": {
+      "mecanica": {"aspectos": [], "rotulo": "Não mencionado"},
+      "narrativa": {"aspectos": [], "rotulo": "Não mencionado"},
+      "estetica": {"aspectos": [], "rotulo": "Não mencionado"},
+      "tecnologia": {"aspectos": [], "rotulo": "Não mencionado"}
+    },
+    "flags": ["SEM_EIXO"],
+    "nota": "Preço, estúdio e comunidade ficam fora da tétrade."
+  },
+  {
+    "id": 8,
+    "texto": "No lançamento era injogável, mas depois dos patches hoje roda perfeitamente. A história é envolvente e os diálogos são muito bem escritos.",
+    "eixos": {
+      "mecanica": {"aspectos": [], "rotulo": "Não mencionado"},
+      "narrativa": {"aspectos": ["+", "+"], "rotulo": "Positivo"},
+      "estetica": {"aspectos": [], "rotulo": "Não mencionado"},
+      "tecnologia": {"aspectos": ["+"], "rotulo": "Positivo"}
+    },
+    "flags": []
+  },
+  {
+    "id": 9,
+    "texto": "Visual lindo, mas a interface é feia e a dublagem é fraca. Pelo menos a trilha salva.",
+    "eixos": {
+      "mecanica": {"aspectos": [], "rotulo": "Não mencionado"},
+      "narrativa": {"aspectos": [], "rotulo": "Não mencionado"},
+      "estetica": {"aspectos": ["+", "-", "-", "+"], "rotulo": "Misto (=)"},
+      "tecnologia": {"aspectos": [], "rotulo": "Não mencionado"}
+    },
+    "flags": []
+  },
+  {
+    "id": 10,
+    "texto": "O combate é divertido no começo, mas fica repetitivo.",
+    "eixos": {
+      "mecanica": {"aspectos": ["+", "-"], "rotulo": "Misto (=)"},
+      "narrativa": {"aspectos": [], "rotulo": "Não mencionado"},
+      "estetica": {"aspectos": [], "rotulo": "Não mencionado"},
+      "tecnologia": {"aspectos": [], "rotulo": "Não mencionado"}
+    },
+    "flags": []
+  },
+  {
+    "id": 11,
+    "texto": "Os controles são péssimos: o personagem não responde direito e dá input lag. O inventário também é um caos.",
+    "eixos": {
+      "mecanica": {"aspectos": ["-"], "rotulo": "Negativo"},
+      "narrativa": {"aspectos": [], "rotulo": "Não mencionado"},
+      "estetica": {"aspectos": [], "rotulo": "Não mencionado"},
+      "tecnologia": {"aspectos": ["-"], "rotulo": "Negativo"}
+    },
+    "flags": [],
+    "nota": "Input lag é falha de funcionamento (Tecnologia). Inventário caótico é desenho do sistema (Mecânica)."
+  },
+  {
+    "id": 12,
+    "texto": "Se você gosta de ficção científica pode curtir a história. Os gráficos são medianos, nada de mais. A trilha é ok. Não tive problemas técnicos.",
+    "eixos": {
+      "mecanica": {"aspectos": [], "rotulo": "Não mencionado"},
+      "narrativa": {"aspectos": ["0"], "rotulo": "Neutro"},
+      "estetica": {"aspectos": ["0", "0"], "rotulo": "Neutro"},
+      "tecnologia": {"aspectos": ["0"], "rotulo": "Neutro"}
+    },
+    "flags": []
+  },
+  {
+    "id": 13,
+    "texto": "O combate é divertido, mas a dificuldade é mal balanceada.",
+    "eixos": {
+      "mecanica": {"aspectos": ["+", "-"], "rotulo": "Misto (=)"},
+      "narrativa": {"aspectos": [], "rotulo": "Não mencionado"},
+      "estetica": {"aspectos": [], "rotulo": "Não mencionado"},
+      "tecnologia": {"aspectos": [], "rotulo": "Não mencionado"}
+    },
+    "flags": []
+  }
+]

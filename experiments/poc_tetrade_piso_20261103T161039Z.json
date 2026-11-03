@@ -1,0 +1,6 @@
+{
+  "experimento": "poc_tetrade_piso",
+  "executado_em_utc": "20261103T161039Z",
+  "treinou": false,
+  "motivo": "Não há poc/tetrade/dados/rotulos.csv. Sem rótulo humano não existe F1. O arquivo de exemplo está em rotulos.csv.exemplo."
+}
