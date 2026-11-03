@@ -1,0 +1,25 @@
+{
+  "hipotese": "Treino, validação e teste não compartilham jogo nem o mesmo texto.",
+  "o_que_isto_nao_e": "O teste ainda não foi anotado por duas pessoas. Ele fica reservado.",
+  "origem_da_divisao": "arquivo salvo",
+  "arquivo": "/Users/igorpierote/Develop/Pixel-Oracle-Project/PixelOracle-API/poc/tetrade/dados/divisao.json",
+  "reviews": {
+    "treino": 4032,
+    "validacao": 878,
+    "teste": 117
+  },
+  "jogos": {
+    "treino": 158,
+    "validacao": 39,
+    "teste": 8
+  },
+  "teste_dentro_da_faixa_100_a_150": true,
+  "intersecao_de_jogos": {
+    "treino_validacao": [],
+    "treino_teste": [],
+    "validacao_teste": []
+  },
+  "textos_em_mais_de_um_conjunto": 0,
+  "jogos_da_amostra_fora_da_divisao_salva": [],
+  "passou": true
+}
