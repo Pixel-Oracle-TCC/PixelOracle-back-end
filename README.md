@@ -1,5 +1,7 @@
 # Pixel Oracle API
 
+[![CI](https://github.com/Pixel-Oracle-TCC/PixelOracle-back-end/actions/workflows/ci.yml/badge.svg)](https://github.com/Pixel-Oracle-TCC/PixelOracle-back-end/actions/workflows/ci.yml)
+
 Monorepo do **Pixel Oracle** (TCC): mentoria pré-lançamento para desenvolvedores indie.
 
 O desenvolvedor descreve o jogo (título, ideia, gêneros) e recebe um **dashboard de evidências

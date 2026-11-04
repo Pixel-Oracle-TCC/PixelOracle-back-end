@@ -49,7 +49,7 @@ Feature flags do manual (`ff_recomendacoes_generativas` e similares) ficam para 
 
 ## O que o CI faz hoje
 
-Disparo: pull request e push em `develop` e `main`. Uma execução nova cancela a anterior do mesmo ref. Permissão dos workflows: só leitura do código.
+Disparo: pull request e push em `develop` e `main`. Uma execução nova cancela a anterior do mesmo ref. O nome da execução leva o número do pull request, ou o nome da branch. Permissão dos workflows: leitura do código. O job `api` também pode escrever o comentário no pull request.
 
 ### Frontend (`Pixel-Oracle-FrontEnd/.github/workflows/ci.yml`)
 
@@ -61,40 +61,22 @@ Checks: `test`, `build`, `audit`, `secrets`.
 - `npm audit --audit-level=critical`
 - Gitleaks em todo PR e nos pushes de `develop` e `main`
 
-O resumo dos testes fica na aba Summary do check `test`.
+A aba Summary de cada check é um quadro de passou ou falhou. O job `relatório` junta os quatro. O check `test` comenta no pull request a contagem e se `mapFormToGamePitch` exercitou o `POST /api/report`. O selo do workflow fica no README. Os quatro checks são os que a trava de merge usaria; no plano gratuito de organização, com repositório privado, o GitHub não aplica essa trava.
 
 O `package.json` do frontend fixa `piscina` em 5.3.2 (`overrides`). O `@angular/build` 21.2.8 puxava 5.1.4, que o audit marca como crítica. Avisos high continuam fora desse gate.
 
 Não há ESLint. Prettier não é gate: o repositório ainda não está formatado por inteiro.
 
-### API (`.github/workflows/ci-api.yml`)
+### API, ML, Compose e segredos (`.github/workflows/ci.yml`)
 
-Check: `api`. Só roda se o PR ou o push mexer em `api/**` (ou no próprio workflow).
+Um workflow só. O grafo começa em `mudanças` e termina em `relatório`. O job que o diff não toca fica como "não rodou" e não derruba o pipeline.
 
-- Node 20, igual ao `api/Dockerfile`
-- `npm test` — testes unitários de `parseGamePitch`
-- `npm run typecheck`, `npm run build`, `npm audit --audit-level=critical`
-- `docker build` da API
+- `api`: Node 20, igual ao `api/Dockerfile`. `npm test` de `parseGamePitch`, typecheck, build, audit crítico e `docker build`. Roda com mudança em `api/**`, no script do comentário ou no próprio workflow. Comenta no pull request a contagem e se o contrato de `POST /api/report` foi exercitado. O quadro fica na aba Summary.
+- `ml`: Python 3.11, `pip install -r ml-service/requirements-ci.txt` (numpy, pandas, scipy, scikit-learn, requests) e `python scripts/test_pipeline.py`. Roda com mudança em `ml-service/**` ou no workflow. `requirements-ci.txt` deixa Torch e `sentence-transformers` de fora. O pin de `scikit-learn` acompanha `requirements.txt`.
+- `compose`: `docker compose config` quando mudam `docker-compose.yml` ou os Dockerfiles. Não constrói a imagem do ML.
+- `secrets`: todo PR e todo push em `develop` e `main`. O binário aberto do Gitleaks 8.30.1 varre o histórico do git. A action oficial pede licença em repositório de organização (`Pixel-Oracle-TCC`), então o workflow não usa ela.
 
-O resumo dos testes fica na aba Summary do check `api`.
-
-### ML (`.github/workflows/ci-ml.yml`)
-
-Check: `ml`. Só roda se mexer em `ml-service/**`.
-
-- Python 3.11
-- `pip install -r ml-service/requirements-ci.txt` (numpy, pandas, scipy, scikit-learn, requests)
-- `python scripts/test_pipeline.py`
-
-O resumo fica na aba Summary do check `ml`. `requirements-ci.txt` deixa Torch e `sentence-transformers` de fora. O pin de `scikit-learn` acompanha `requirements.txt`.
-
-### Compose (`.github/workflows/ci-compose.yml`)
-
-Check: `compose`. Roda quando mudam `docker-compose.yml` ou os Dockerfiles. `docker compose config` valida o arquivo e não constrói a imagem do ML.
-
-### Segredos (`.github/workflows/security.yml`)
-
-Check: `secrets`. Roda em todo PR e nos pushes de `develop` e `main`, sem filtro de pasta. O binário aberto do Gitleaks 8.30.1 varre o histórico do git. A action oficial pede licença em repositório de organização (`Pixel-Oracle-TCC`), então o workflow não usa ela.
+O selo único do workflow fica no README.
 
 A chave que chegou a entrar em `api/.env.example` foi apagada do histórico. O exemplo segue sem valor. Se aquela chave ainda estiver ativa no Google AI Studio, revogue.
 
@@ -106,14 +88,12 @@ Os dois repositórios têm `.github/PULL_REQUEST_TEMPLATE.md`. Ao abrir um PR pe
 
 ## Branch protection
 
-No GitHub, em `main` e `develop`: PR obrigatório, uma aprovação de outra pessoa, conversa resolvida.
+A regra desejada, quando o GitHub passar a aplicá-la:
 
-Checks que podem ser obrigatórios sem travar PR alheio à pasta:
+- Frontend: `test`, `build`, `audit`, `secrets`.
+- Backend: só `secrets`. `api`, `ml` e `compose` ficam de fora, porque num pull request que não mexe neles o job aparece como "não rodou".
 
-- Frontend: `test`, `build`, `audit`, `secrets` (o workflow sempre roda).
-- Backend: `secrets` (sempre roda).
-
-`api`, `ml` e `compose` usam filtro de caminho. Se forem marcados como obrigatórios, um PR que não dispara o workflow fica esperando um check que não existe. Só exija esses três se a regra do repositório tratar workflow ignorado como sucesso.
+Os dois repositórios são privados e a organização está no plano gratuito. O GitHub mostra que a regra não é aplicada até a organização ir para o plano Team, ou até o repositório ficar público. Por isso o botão de merge ainda não trava.
 
 ## O que fica para o CD
 

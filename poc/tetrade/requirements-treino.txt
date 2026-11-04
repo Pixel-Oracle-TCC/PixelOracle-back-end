@@ -1,0 +1,5 @@
+# Dependências do treino dos transformers. Não instalar nesta etapa.
+# torch
+# transformers
+# O script 05-ajuste-fino/run.py não treina enquanto TETRADE_TREINAR não for 1,
+# e mesmo com essa variável esta rodada recusa o treino por falta de planilha e de GPU.

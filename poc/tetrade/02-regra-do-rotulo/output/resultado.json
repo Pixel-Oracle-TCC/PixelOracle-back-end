@@ -1,0 +1,374 @@
+{
+  "hipotese": "A contagem escrita no manual produz o rótulo dos 13 exemplos.",
+  "o_que_isto_nao_e": "Não é um modelo e não mede se duas pessoas anotam igual.",
+  "exemplos": 13,
+  "falhas": [],
+  "passou": true,
+  "esquema_de_cinco_nos_exemplos": [
+    {
+      "id": 1,
+      "eixo": "mecanica",
+      "sete": "Misto (+)",
+      "cinco": "Misto",
+      "binario": "com juízo"
+    },
+    {
+      "id": 1,
+      "eixo": "narrativa",
+      "sete": "Não mencionado",
+      "cinco": "Não mencionado",
+      "binario": "sem juízo"
+    },
+    {
+      "id": 1,
+      "eixo": "estetica",
+      "sete": "Positivo",
+      "cinco": "Positivo",
+      "binario": "com juízo"
+    },
+    {
+      "id": 1,
+      "eixo": "tecnologia",
+      "sete": "Negativo",
+      "cinco": "Negativo",
+      "binario": "com juízo"
+    },
+    {
+      "id": 2,
+      "eixo": "mecanica",
+      "sete": "Positivo",
+      "cinco": "Positivo",
+      "binario": "com juízo"
+    },
+    {
+      "id": 2,
+      "eixo": "narrativa",
+      "sete": "Negativo",
+      "cinco": "Negativo",
+      "binario": "com juízo"
+    },
+    {
+      "id": 2,
+      "eixo": "estetica",
+      "sete": "Positivo",
+      "cinco": "Positivo",
+      "binario": "com juízo"
+    },
+    {
+      "id": 2,
+      "eixo": "tecnologia",
+      "sete": "Não mencionado",
+      "cinco": "Não mencionado",
+      "binario": "sem juízo"
+    },
+    {
+      "id": 3,
+      "eixo": "mecanica",
+      "sete": "Neutro",
+      "cinco": "Neutro",
+      "binario": "sem juízo"
+    },
+    {
+      "id": 3,
+      "eixo": "narrativa",
+      "sete": "Não mencionado",
+      "cinco": "Não mencionado",
+      "binario": "sem juízo"
+    },
+    {
+      "id": 3,
+      "eixo": "estetica",
+      "sete": "Não mencionado",
+      "cinco": "Não mencionado",
+      "binario": "sem juízo"
+    },
+    {
+      "id": 3,
+      "eixo": "tecnologia",
+      "sete": "Neutro",
+      "cinco": "Neutro",
+      "binario": "sem juízo"
+    },
+    {
+      "id": 4,
+      "eixo": "mecanica",
+      "sete": "Não mencionado",
+      "cinco": "Não mencionado",
+      "binario": "sem juízo"
+    },
+    {
+      "id": 4,
+      "eixo": "narrativa",
+      "sete": "Não mencionado",
+      "cinco": "Não mencionado",
+      "binario": "sem juízo"
+    },
+    {
+      "id": 4,
+      "eixo": "estetica",
+      "sete": "Não mencionado",
+      "cinco": "Não mencionado",
+      "binario": "sem juízo"
+    },
+    {
+      "id": 4,
+      "eixo": "tecnologia",
+      "sete": "Negativo",
+      "cinco": "Negativo",
+      "binario": "com juízo"
+    },
+    {
+      "id": 5,
+      "eixo": "mecanica",
+      "sete": "Negativo",
+      "cinco": "Negativo",
+      "binario": "com juízo"
+    },
+    {
+      "id": 5,
+      "eixo": "narrativa",
+      "sete": "Negativo",
+      "cinco": "Negativo",
+      "binario": "com juízo"
+    },
+    {
+      "id": 5,
+      "eixo": "estetica",
+      "sete": "Positivo",
+      "cinco": "Positivo",
+      "binario": "com juízo"
+    },
+    {
+      "id": 5,
+      "eixo": "tecnologia",
+      "sete": "Não mencionado",
+      "cinco": "Não mencionado",
+      "binario": "sem juízo"
+    },
+    {
+      "id": 6,
+      "eixo": "mecanica",
+      "sete": "Negativo",
+      "cinco": "Negativo",
+      "binario": "com juízo"
+    },
+    {
+      "id": 6,
+      "eixo": "narrativa",
+      "sete": "Não mencionado",
+      "cinco": "Não mencionado",
+      "binario": "sem juízo"
+    },
+    {
+      "id": 6,
+      "eixo": "estetica",
+      "sete": "Não mencionado",
+      "cinco": "Não mencionado",
+      "binario": "sem juízo"
+    },
+    {
+      "id": 6,
+      "eixo": "tecnologia",
+      "sete": "Não mencionado",
+      "cinco": "Não mencionado",
+      "binario": "sem juízo"
+    },
+    {
+      "id": 7,
+      "eixo": "mecanica",
+      "sete": "Não mencionado",
+      "cinco": "Não mencionado",
+      "binario": "sem juízo"
+    },
+    {
+      "id": 7,
+      "eixo": "narrativa",
+      "sete": "Não mencionado",
+      "cinco": "Não mencionado",
+      "binario": "sem juízo"
+    },
+    {
+      "id": 7,
+      "eixo": "estetica",
+      "sete": "Não mencionado",
+      "cinco": "Não mencionado",
+      "binario": "sem juízo"
+    },
+    {
+      "id": 7,
+      "eixo": "tecnologia",
+      "sete": "Não mencionado",
+      "cinco": "Não mencionado",
+      "binario": "sem juízo"
+    },
+    {
+      "id": 8,
+      "eixo": "mecanica",
+      "sete": "Não mencionado",
+      "cinco": "Não mencionado",
+      "binario": "sem juízo"
+    },
+    {
+      "id": 8,
+      "eixo": "narrativa",
+      "sete": "Positivo",
+      "cinco": "Positivo",
+      "binario": "com juízo"
+    },
+    {
+      "id": 8,
+      "eixo": "estetica",
+      "sete": "Não mencionado",
+      "cinco": "Não mencionado",
+      "binario": "sem juízo"
+    },
+    {
+      "id": 8,
+      "eixo": "tecnologia",
+      "sete": "Positivo",
+      "cinco": "Positivo",
+      "binario": "com juízo"
+    },
+    {
+      "id": 9,
+      "eixo": "mecanica",
+      "sete": "Não mencionado",
+      "cinco": "Não mencionado",
+      "binario": "sem juízo"
+    },
+    {
+      "id": 9,
+      "eixo": "narrativa",
+      "sete": "Não mencionado",
+      "cinco": "Não mencionado",
+      "binario": "sem juízo"
+    },
+    {
+      "id": 9,
+      "eixo": "estetica",
+      "sete": "Misto (=)",
+      "cinco": "Misto",
+      "binario": "com juízo"
+    },
+    {
+      "id": 9,
+      "eixo": "tecnologia",
+      "sete": "Não mencionado",
+      "cinco": "Não mencionado",
+      "binario": "sem juízo"
+    },
+    {
+      "id": 10,
+      "eixo": "mecanica",
+      "sete": "Misto (=)",
+      "cinco": "Misto",
+      "binario": "com juízo"
+    },
+    {
+      "id": 10,
+      "eixo": "narrativa",
+      "sete": "Não mencionado",
+      "cinco": "Não mencionado",
+      "binario": "sem juízo"
+    },
+    {
+      "id": 10,
+      "eixo": "estetica",
+      "sete": "Não mencionado",
+      "cinco": "Não mencionado",
+      "binario": "sem juízo"
+    },
+    {
+      "id": 10,
+      "eixo": "tecnologia",
+      "sete": "Não mencionado",
+      "cinco": "Não mencionado",
+      "binario": "sem juízo"
+    },
+    {
+      "id": 11,
+      "eixo": "mecanica",
+      "sete": "Negativo",
+      "cinco": "Negativo",
+      "binario": "com juízo"
+    },
+    {
+      "id": 11,
+      "eixo": "narrativa",
+      "sete": "Não mencionado",
+      "cinco": "Não mencionado",
+      "binario": "sem juízo"
+    },
+    {
+      "id": 11,
+      "eixo": "estetica",
+      "sete": "Não mencionado",
+      "cinco": "Não mencionado",
+      "binario": "sem juízo"
+    },
+    {
+      "id": 11,
+      "eixo": "tecnologia",
+      "sete": "Negativo",
+      "cinco": "Negativo",
+      "binario": "com juízo"
+    },
+    {
+      "id": 12,
+      "eixo": "mecanica",
+      "sete": "Não mencionado",
+      "cinco": "Não mencionado",
+      "binario": "sem juízo"
+    },
+    {
+      "id": 12,
+      "eixo": "narrativa",
+      "sete": "Neutro",
+      "cinco": "Neutro",
+      "binario": "sem juízo"
+    },
+    {
+      "id": 12,
+      "eixo": "estetica",
+      "sete": "Neutro",
+      "cinco": "Neutro",
+      "binario": "sem juízo"
+    },
+    {
+      "id": 12,
+      "eixo": "tecnologia",
+      "sete": "Neutro",
+      "cinco": "Neutro",
+      "binario": "sem juízo"
+    },
+    {
+      "id": 13,
+      "eixo": "mecanica",
+      "sete": "Misto (=)",
+      "cinco": "Misto",
+      "binario": "com juízo"
+    },
+    {
+      "id": 13,
+      "eixo": "narrativa",
+      "sete": "Não mencionado",
+      "cinco": "Não mencionado",
+      "binario": "sem juízo"
+    },
+    {
+      "id": 13,
+      "eixo": "estetica",
+      "sete": "Não mencionado",
+      "cinco": "Não mencionado",
+      "binario": "sem juízo"
+    },
+    {
+      "id": 13,
+      "eixo": "tecnologia",
+      "sete": "Não mencionado",
+      "cinco": "Não mencionado",
+      "binario": "sem juízo"
+    }
+  ],
+  "nota": "A função não lê o texto. A pessoa lista os aspectos; a função só aplica a tabela de contagem."
+}

@@ -1,0 +1,11 @@
+{
+  "experimento": "poc_tetrade_divisao",
+  "executado_em_utc": "20261103T161053Z",
+  "passou": true,
+  "reviews": {
+    "treino": 4032,
+    "validacao": 878,
+    "teste": 117
+  },
+  "origem": "arquivo salvo"
+}

@@ -1,0 +1,2 @@
+# Só para os gráficos das POCs. O ml-service não depende disto.
+matplotlib>=3.8
