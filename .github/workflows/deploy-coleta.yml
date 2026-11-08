@@ -117,7 +117,7 @@ jobs:
           fi
           RSH="ssh -i $HOME/.ssh/id_coleta -o IdentitiesOnly=yes ${SSH_OPTS[*]}"
           SSH=(ssh -i "$HOME/.ssh/id_coleta" -o IdentitiesOnly=yes "${SSH_OPTS[@]}" "$SSH_USER@$HOST")
-          "${SSH[@]}" "mkdir -p /opt/pixel-oracle"
+          "${SSH[@]}" 'sudo mkdir -p /opt/pixel-oracle && sudo chown "$(id -un):$(id -gn)" /opt/pixel-oracle'
           rsync -az --delete \
             --exclude .git \
             --exclude api/node_modules \
