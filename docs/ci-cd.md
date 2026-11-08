@@ -78,7 +78,7 @@ Um workflow só. O grafo começa em `mudanças` e termina em `relatório`. O job
 
 O selo único do workflow fica no README.
 
-A chave que chegou a entrar em `api/.env.example` foi apagada do histórico. O exemplo segue sem valor. Se aquela chave ainda estiver ativa no Google AI Studio, revogue.
+A chave que chegou a entrar em `api/.env.example` saiu do arquivo atual. O commit antigo continua no histórico, e o `.gitleaks.toml` deixa o Gitleaks passar só nesse commit. Se aquela chave ainda estiver ativa no Google AI Studio, revogue.
 
 Dependabot (`.github/dependabot.yml`) abre PR semanal de npm em `api/`, pip em `ml-service/` e GitHub Actions. Updates minor e patch vão agrupados.
 
