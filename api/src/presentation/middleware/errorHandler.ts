@@ -1,29 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import axios from "axios";
 
-function axiosResponseBody(data: unknown): unknown {
-  if (data === undefined || data === null) {
-    return undefined;
-  }
-  if (typeof Buffer !== "undefined" && Buffer.isBuffer(data)) {
-    const text = data.toString("utf8");
-    try {
-      return JSON.parse(text) as unknown;
-    } catch {
-      return text;
-    }
-  }
-  if (data instanceof ArrayBuffer) {
-    const text = Buffer.from(data).toString("utf8");
-    try {
-      return JSON.parse(text) as unknown;
-    } catch {
-      return text;
-    }
-  }
-  return data;
-}
-
 export function errorHandler(
   err: unknown,
   _req: Request,
@@ -32,11 +9,10 @@ export function errorHandler(
 ) {
   if (axios.isAxiosError(err)) {
     const status = err.response?.status ?? 502;
-    const body = axiosResponseBody(err.response?.data);
     const detail =
-      body && typeof body === "object" && "detail" in body
-        ? (body as { detail: unknown }).detail
-        : (body ?? err.message);
+      err.response?.data?.detail ??
+      err.response?.data ??
+      err.message;
     res.status(status).json({
       status: "erro",
       origem: "ml-service",

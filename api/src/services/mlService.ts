@@ -23,12 +23,4 @@ export class MlService implements IMlService {
     const { data } = await this.client.post<AnalysisResult>("/analyze", pitch);
     return data;
   }
-
-  async correlationHeatmap(): Promise<Buffer> {
-    const { data } = await this.client.get<ArrayBuffer>("/correlation-heatmap", {
-      responseType: "arraybuffer",
-      timeout: 120_000,
-    });
-    return Buffer.from(data);
-  }
 }

@@ -4,20 +4,16 @@ Camada fina: valida input (Pydantic), chama caso de uso, traduz exceções em HT
 Regra de negócio NÃO fica aqui — ver application/*.
 """
 
-import logging
 from typing import Any, Dict
 
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import Response
 from sqlalchemy import text
 
 from application.analyze import AnalyzePitchUseCase, RetrieveSimilarUseCase
-from application.correlation_heatmap import CorrelationHeatmapUseCase
 from db.connection import get_database_url, session_scope
 from presentation.schemas import GamePitchInput, RetrieveSimilarInput
 
-ENDPOINTS = ["/", "/health", "/retrieve-similar", "/analyze", "/correlation-heatmap"]
-logger = logging.getLogger(__name__)
+ENDPOINTS = ["/", "/health", "/retrieve-similar", "/analyze"]
 COUNTED_TABLES = ("games", "reviews", "review_aspects", "themes", "theme_stats", "genre_drivers")
 
 
@@ -33,7 +29,6 @@ def create_router() -> APIRouter:
     router = APIRouter()
     retrieve_use_case = RetrieveSimilarUseCase()
     analyze_use_case = AnalyzePitchUseCase()
-    correlation_heatmap_use_case = CorrelationHeatmapUseCase()
 
     def _health_payload() -> Dict[str, Any]:
         # Sempre 200: o healthcheck do Docker não pode derrubar o serviço por banco vazio
@@ -105,24 +100,5 @@ def create_router() -> APIRouter:
             raise HTTPException(
                 status_code=500, detail=f"Erro ao montar o dashboard: {exc}"
             ) from exc
-
-    @router.get("/correlation-heatmap")
-    def correlation_heatmap():
-        """PNG do heatmap de correlação (reviews × gêneros/desenvolvedoras)."""
-        _require_db()
-        try:
-            session = session_scope()
-            try:
-                png = correlation_heatmap_use_case.execute(session)
-            finally:
-                session.close()
-        except ValueError as exc:
-            raise HTTPException(status_code=422, detail=str(exc)) from exc
-        except Exception as exc:
-            logger.exception("Falha ao gerar /correlation-heatmap")
-            raise HTTPException(
-                status_code=500, detail=f"Erro ao gerar o heatmap de correlação: {exc}"
-            ) from exc
-        return Response(content=png, media_type="image/png")
 
     return router
