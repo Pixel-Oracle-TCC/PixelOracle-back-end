@@ -1,0 +1,24 @@
+{
+  "seed_used": 23,
+  "distribution_score": 1.0107758620689655,
+  "n_reviews": {
+    "train": 116,
+    "val": 0,
+    "test": 32
+  },
+  "game_ids": {
+    "train": [
+      "3",
+      "4",
+      "7",
+      "6",
+      "8",
+      "5"
+    ],
+    "val": [],
+    "test": [
+      "1",
+      "2"
+    ]
+  }
+}

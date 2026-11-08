@@ -10,21 +10,21 @@ cd "$ROOT"
 LIMIT="${COLLECT_LIMIT:-400}"
 COMPOSE=(docker compose -f docker-compose.collect.yml --profile collect)
 
-if ! "$COMPOSE" exec -T db pg_isready -U pixel -d pixeloracle >/dev/null 2>&1; then
-  "$COMPOSE" up -d db
+if ! "${COMPOSE[@]}" exec -T db pg_isready -U pixel -d pixeloracle >/dev/null 2>&1; then
+  "${COMPOSE[@]}" up -d db
   for _ in 1 2 3 4 5 6 7 8 9 10; do
-    "$COMPOSE" exec -T db pg_isready -U pixel -d pixeloracle && break
+    "${COMPOSE[@]}" exec -T db pg_isready -U pixel -d pixeloracle && break
     sleep 3
   done
 fi
 
 echo "Catálogo: até ${LIMIT} jogos novos do top sellers."
-"$COMPOSE" run --rm collect python scripts/collect_top_games.py --limit "$LIMIT"
+"${COMPOSE[@]}" run --rm collect python scripts/collect_top_games.py --limit "$LIMIT"
 
 echo "Metadados dos jogos que ainda faltam."
-"$COMPOSE" run --rm collect python scripts/enrich_games.py
+"${COMPOSE[@]}" run --rm collect python scripts/enrich_games.py
 
 echo "Reviews: até ${LIMIT} jogos ainda sem coleta."
-"$COMPOSE" run --rm collect python scripts/collect_reviews.py --all-games --limit-games "$LIMIT"
+"${COMPOSE[@]}" run --rm collect python scripts/collect_reviews.py --all-games --limit-games "$LIMIT"
 
 echo "Coleta encerrada."
