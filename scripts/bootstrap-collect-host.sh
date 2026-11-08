@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Prepara uma EC2 Amazon Linux (ou Ubuntu) para a coleta: Docker e o plugin Compose.
+set -euo pipefail
+
+if ! command -v docker >/dev/null 2>&1; then
+  if command -v dnf >/dev/null 2>&1; then
+    sudo dnf install -y docker
+  else
+    sudo apt-get update
+    sudo apt-get install -y docker.io
+  fi
+  sudo systemctl enable --now docker
+fi
+
+if ! sudo docker compose version >/dev/null 2>&1; then
+  case "$(uname -m)" in
+    aarch64 | arm64) arch=aarch64 ;;
+    *) arch=x86_64 ;;
+  esac
+  sudo mkdir -p /usr/local/lib/docker/cli-plugins
+  sudo curl -fsSL \
+    "https://github.com/docker/compose/releases/download/v2.32.4/docker-compose-linux-${arch}" \
+    -o /usr/local/lib/docker/cli-plugins/docker-compose
+  sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+fi
+
+sudo docker compose version

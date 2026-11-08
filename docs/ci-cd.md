@@ -15,7 +15,7 @@ O manual da disciplina fala em monorepo, serviço de IA separado e rota `/predic
 
 ## Branches
 
-GitFlow adaptado, igual nos dois repositórios. `develop` ainda precisa ser criada a partir de `main` no GitHub; os workflows já aceitam essa branch.
+GitFlow adaptado, igual nos dois repositórios. `develop` é a branch de integração. Os workflows já aceitam `develop` e `main`.
 
 | Branch | Papel |
 |--------|--------|
@@ -95,14 +95,19 @@ A regra desejada, quando o GitHub passar a aplicá-la:
 
 Os dois repositórios são privados e a organização está no plano gratuito. O GitHub mostra que a regra não é aplicada até a organização ir para o plano Team, ou até o repositório ficar público. Por isso o botão de merge ainda não trava.
 
-## O que fica para o CD
+## Entrega da coleta
 
-Ainda não há `deploy-dev.yml`, `deploy-hmg.yml` nem `deploy-prod.yml`, nem VPS ou plataforma gerenciada.
+O pull request continua só no CI. A máquina de coleta é outra execução, o workflow `Entrega da coleta` (`.github/workflows/deploy-coleta.yml`).
 
-Quando for a hora:
+Dois momentos, fáceis de mostrar no Actions:
 
-1. `apiUrl` (e `useMockApi: false`) por ambiente no frontend.
-2. GitHub Environments `dev`, `hmg` e `prod`, com reviewers só em `prod`.
-3. Build e publicação das imagens da API e do ML. A do ML inclui o Torch CPU e não deve rodar em todo PR.
-4. Postgres com volume, migrations versionadas e backup antes de aplicar em produção.
-5. Smoke depois do deploy: `GET /api/health` e um `POST /api/report` de fixture em DEV e HMG.
+1. **Empacota.** Sempre. Valida o `docker-compose.collect.yml` e constrói a imagem enxuta (`ml-service/Dockerfile.collect`). Essa imagem não tem Torch e não chama a Gemini.
+2. **Publica.** Envia o código para a EC2 e sobe o Postgres. Um push em `develop` que mexe na coleta (`ml-service/collection/`, scripts de coleta, migrations, compose ou o próprio workflow) publica sozinho. O botão **Run workflow** publica e ainda coleta o número de jogos pedido (o padrão do botão é 1, para a aula terminar na hora).
+
+Sem o secret `DEV_HOST`, o job `publica` fica verde e o quadro diz que a máquina ainda não foi ligada. A imagem mesmo assim foi empacotada.
+
+Secrets no repositório, nunca no git: `DEV_HOST`, `DEV_USER`, `DEV_SSH_KEY`, `DEV_SSH_KNOWN_HOSTS`, `POSTGRES_PASSWORD`, `STEAM_API_KEY`.
+
+Na EC2 o Postgres escuta só em `127.0.0.1:5432`. Do notebook: `ssh -L 5433:127.0.0.1:5432 <usuário>@<host>` e `DATABASE_URL` em `localhost:5433`. A API e a Gemini continuam locais.
+
+Homologação, produção e o frontend publicado continuam de fora. O GitHub Free da organização privada segue sem travar o merge.
