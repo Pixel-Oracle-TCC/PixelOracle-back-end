@@ -22,3 +22,6 @@ api/.env
 .idea/
 .vscode/
 *.log
+
+ml-service/sentiment_training/.venv-training/
+ml-service/sentiment_training/checkpoints/
