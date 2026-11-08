@@ -1,6 +1,6 @@
 name: CI
 
-run-name: ${{ github.event_name == 'pull_request' && format('Validação do Pixel Oracle no pull request #{0}', github.event.pull_request.number) || format('Validação do Pixel Oracle em {0}', github.ref_name) }}
+run-name: "${{ github.event_name == 'pull_request' && format('Validação do Pixel Oracle no pull request #{0}', github.event.pull_request.number) || format('Validação do Pixel Oracle em {0}', github.ref_name) }}"
 
 on:
   pull_request:
