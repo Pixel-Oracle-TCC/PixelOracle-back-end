@@ -25,7 +25,7 @@ services:
       context: ./ml-service
       dockerfile: Dockerfile.collect
     environment:
-      DATABASE_URL: postgresql://pixel:${POSTGRES_PASSWORD}@db:5432/pixeloracle
+      DATABASE_URL: postgresql+psycopg2://pixel:${POSTGRES_PASSWORD}@db:5432/pixeloracle
       STEAM_API_KEY: ${STEAM_API_KEY:-}
     depends_on:
       db:

@@ -24,4 +24,14 @@ if ! sudo docker compose version >/dev/null 2>&1; then
   sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
 fi
 
+if ! swapon --show | grep -q '/swapfile'; then
+  if [ ! -f /swapfile ]; then
+    sudo fallocate -l 2G /swapfile
+    sudo chmod 600 /swapfile
+    sudo mkswap /swapfile
+  fi
+  sudo swapon /swapfile
+  grep -q '/swapfile' /etc/fstab || echo '/swapfile swap swap defaults 0 0' | sudo tee -a /etc/fstab >/dev/null
+fi
+
 sudo docker compose version

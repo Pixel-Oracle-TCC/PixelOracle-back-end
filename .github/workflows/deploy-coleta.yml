@@ -1,5 +1,9 @@
 name: Entrega da coleta
 
+# Push em develop publica só na EC2 de DEV (secret DEV_HOST).
+# PROD_HOST é uma trava: se os dois secrets forem o mesmo endereço, o job para
+# antes de copiar qualquer arquivo. A coleta longa fica na máquina de produção.
+
 run-name: ${{ github.event_name == 'workflow_dispatch' && format('Coleta manual de {0} jogos', inputs.jogos) || format('Publica a coleta de {0}', github.ref_name) }}
 
 on:
@@ -78,7 +82,7 @@ jobs:
             {
               echo "## Publica"
               echo ""
-              echo "A imagem foi empacotada. Falta o secret \`DEV_HOST\` para enviar o código à EC2."
+              echo "A imagem foi empacotada. Falta o secret \`DEV_HOST\` para enviar o código à EC2 de DEV."
             } >> "$GITHUB_STEP_SUMMARY"
           else
             echo "ready=true" >> "$GITHUB_OUTPUT"
@@ -88,6 +92,7 @@ jobs:
         if: steps.dest.outputs.ready == 'true'
         env:
           HOST: ${{ secrets.DEV_HOST }}
+          PROD_HOST: ${{ secrets.PROD_HOST }}
           SSH_USER: ${{ secrets.DEV_USER }}
           SSH_KEY: ${{ secrets.DEV_SSH_KEY }}
           KNOWN_HOSTS: ${{ secrets.DEV_SSH_KNOWN_HOSTS }}
@@ -97,6 +102,10 @@ jobs:
           COLLECT_LIMIT: ${{ github.event_name == 'workflow_dispatch' && inputs.jogos || '400' }}
         run: |
           set -euo pipefail
+          if [ -n "${PROD_HOST:-}" ] && [ "$HOST" = "$PROD_HOST" ]; then
+            echo "Recusando: DEV_HOST é o endereço da produção. Este workflow não publica nela."
+            exit 1
+          fi
           install -d -m 700 ~/.ssh
           printf '%s\n' "$SSH_KEY" > ~/.ssh/id_coleta
           chmod 600 ~/.ssh/id_coleta
@@ -131,7 +140,7 @@ jobs:
           {
             echo "## Publica"
             echo ""
-            echo "O código da coleta está na EC2 e o Postgres responde."
+            echo "O código da coleta está na EC2 de DEV e o Postgres responde."
             if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
               echo "O lote manual pedido foi ${{ inputs.jogos }} jogo(s)."
             else
