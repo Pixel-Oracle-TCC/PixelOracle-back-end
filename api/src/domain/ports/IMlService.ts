@@ -4,4 +4,5 @@ import type { AnalysisResult } from "../entities/FullReport.js";
 export interface IMlService {
   health(): Promise<Record<string, unknown>>;
   analyze(pitch: GamePitch): Promise<AnalysisResult>;
+  correlationHeatmap(): Promise<Buffer>;
 }
