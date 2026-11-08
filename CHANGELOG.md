@@ -4,7 +4,9 @@ O histórico segue o que já está na `main`. Datas no formato AAAA-MM-DD.
 
 ## [Não publicado]
 
-Nada aguardando publicação além do que está na `main`.
+### Adicionado
+
+- Workflow `Entrega da coleta`: empacota a imagem sem Torch e, no push em `develop` que mexe na coleta, publica esse código numa EC2 com Postgres. O botão Run workflow coleta um lote na hora. A Gemini não entra nessa máquina.
 
 ## [2026-10-26]
 

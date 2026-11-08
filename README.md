@@ -29,6 +29,8 @@ Conformidade: **nenhum dado de autor** é guardado (sem `steamid`, sem perfil). 
 
 Documentação de produto/arquitetura: vault Obsidian `TCC/` · contratos: [`CONTRATOS_API.md`](CONTRATOS_API.md) · Docker: [`DOCKER.md`](DOCKER.md) · entrega: [`docs/ci-cd.md`](docs/ci-cd.md) · histórico: [`CHANGELOG.md`](CHANGELOG.md).
 
+Mudança na coleta que entra em `develop` dispara o workflow **Entrega da coleta**: empacota a imagem sem Torch e publica esse código na EC2. O botão Run workflow, no Actions, coleta um lote na hora. A Gemini fica no notebook.
+
 ---
 
 ## Início rápido

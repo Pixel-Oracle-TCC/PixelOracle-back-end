@@ -1,0 +1,37 @@
+# Máquina de coleta. Postgres com volume e um container descartável, sem API, sem ML e sem Torch.
+# A senha vem do .env da máquina (POSTGRES_PASSWORD). A porta do banco fica só em 127.0.0.1.
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: pixel
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD}
+      POSTGRES_DB: pixeloracle
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./ml-service/db/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pixel -d pixeloracle"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  collect:
+    build:
+      context: ./ml-service
+      dockerfile: Dockerfile.collect
+    environment:
+      DATABASE_URL: postgresql://pixel:${POSTGRES_PASSWORD}@db:5432/pixeloracle
+      STEAM_API_KEY: ${STEAM_API_KEY:-}
+    depends_on:
+      db:
+        condition: service_healthy
+    profiles: ["collect"]
+    restart: "no"
+
+volumes:
+  pgdata:
