@@ -1,0 +1,13 @@
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+COPY requirements-collect.txt .
+RUN pip install --no-cache-dir -r requirements-collect.txt
+
+COPY . .
+
+CMD ["python", "scripts/collect_reviews.py", "--help"]
