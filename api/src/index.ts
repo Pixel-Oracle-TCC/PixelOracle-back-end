@@ -1,8 +1,8 @@
 /**
  * Bootstrap da API principal (porta pública do frontend).
  *
- * DI manual (sem Nest): monta MlService + Gemini/Fallback → GenerateFullReportUseCase
- * e o pool Postgres → repositório de KPIs.
+ * DI manual (sem Nest): monta MlService + Gemini/Fallback → GenerateFullReportUseCase.
+ * Por quê dois serviços: esta API não acessa Postgres — só orquestra o ml-service.
  * Ver vault: [[Por que dois servicos e um banco]] / [[Por que Ports and Adapters]].
  */
 import "dotenv/config";
@@ -13,7 +13,6 @@ import { GenerateFullReportUseCase } from "./application/use-cases/GenerateFullR
 import { FallbackInsightsService, GeminiService } from "./services/geminiService.js";
 import { MlService } from "./services/mlService.js";
 import { errorHandler } from "./presentation/middleware/errorHandler.js";
-import { createDashboardRoutes } from "./presentation/routes/dashboard.routes.js";
 import { createRoutes } from "./presentation/routes/index.js";
 
 const PORT = Number(process.env.PORT ?? 3000);
@@ -34,12 +33,6 @@ if (!GEMINI_API_KEY) {
   );
 }
 
-if (!process.env.DATABASE_URL) {
-  console.warn(
-    "⚠️  DATABASE_URL não definida — GET /kpis/dashboard e /kpis/releases falharão ao consultar o Postgres."
-  );
-}
-
 const generateFullReport = new GenerateFullReportUseCase(
   mlService,
   insightsService,
@@ -51,7 +44,6 @@ app.use(cors());
 app.use(express.json());
 
 app.use("/api", createRoutes(generateFullReport, mlService));
-app.use("/kpis", createDashboardRoutes(mlService));
 
 app.use(errorHandler);
 
@@ -59,7 +51,5 @@ app.listen(PORT, () => {
   console.log(`🚀 Pixel Oracle — API principal (dashboard de evidências de reviews)`);
   console.log(`   http://localhost:${PORT}`);
   console.log(`   ML: ${ML_SERVICE_URL}`);
-  console.log(
-    `   Rotas: GET /api/health | POST /api/report | GET /kpis/dashboard | GET /kpis/releases | GET /kpis/correlation-heatmap`
-  );
+  console.log(`   Rotas: GET /api/health | POST /api/report`);
 });

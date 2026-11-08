@@ -68,7 +68,6 @@ services:
     environment:
       PORT: "3000"
       ML_SERVICE_URL: http://ml-service:8000
-      DATABASE_URL: postgresql://pixel:pixel@db:5432/pixeloracle
     env_file:
       - path: ./api/.env
         required: false
