@@ -1,0 +1,19 @@
+# Overlay de treino — NÃO substituir ml-service/requirements.txt (runtime da API).
+# Instale num venv separado: python -m venv .venv-training && pip install -r requirements-training.txt
+# sklearn/pandas/matplotlib/seaborn/torch já existem no runtime Docker; versões alinhadas.
+
+scikit-learn==1.6.1
+pandas>=2.0.0
+numpy>=1.24.0
+matplotlib>=3.8.0
+seaborn>=0.13.0
+scipy>=1.11.0
+openpyxl==3.1.5
+tqdm==4.67.1
+transformers==4.46.3
+accelerate==1.1.1
+safetensors==0.4.5
+huggingface-hub>=0.26.0
+# torch: no Docker da API já é CPU wheel; no venv de treino instale o índice CUDA se houver GPU:
+#   pip install torch --index-url https://download.pytorch.org/whl/cu124
+torch>=2.1.0
