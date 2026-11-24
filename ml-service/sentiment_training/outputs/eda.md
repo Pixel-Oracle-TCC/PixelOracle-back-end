@@ -1,18 +1,19 @@
 # EDA — reviews anotadas (Tétrade de Schell)
 
 - Arquivo: `reviews_anotadas.xlsx`
-- SHA-256: `7ae9b1ec6352cfb6d237d47f1bb176be8ff6abc437e0b24a21df1cd863ed90c1`
+- SHA-256: `62858c46123f6389e0ab822890d89e1e1e0eb5d97e822aec2a7ff2f6142c1310`
 - Linhas no arquivo: **4000**
-- Sem nenhum eixo preenchido (removidas): **3601**
+- Sem nenhum eixo preenchido (removidas): **3001**
 - Parcialmente preenchidas (removidas): **1**
 - Rótulo inválido (não mapeado): **1**
 - Removidas por MIN_WORDS: **0**
-- Rotuladas usadas: **398**
-- Jogos distintos (rotuladas): **21**
+- Rotuladas usadas: **998**
+- Jogos distintos (rotuladas): **55**
 
 ## Anotador
 
-- `Claude`: 350
+- `Claude`: 750
+- `Grok`: 200
 - `(vazio)`: 48
 
 ## Distribuição das 7 classes por eixo
@@ -21,66 +22,66 @@
 
 | Classe | n | % |
 |---|---:|---:|
-| POS | 133 | 33.4 |
-| NEG | 51 | 12.8 |
-| NEU | 11 | 2.8 |
-| MAJ_POS | 25 | 6.3 |
-| DIV | 32 | 8.0 |
-| MAJ_NEG | 17 | 4.3 |
-| NM | 129 | 32.4 |
+| POS | 334 | 33.5 |
+| NEG | 123 | 12.3 |
+| NEU | 25 | 2.5 |
+| MAJ_POS | 52 | 5.2 |
+| DIV | 69 | 6.9 |
+| MAJ_NEG | 49 | 4.9 |
+| NM | 346 | 34.7 |
 
 ### Narrativa
 
 | Classe | n | % |
 |---|---:|---:|
-| POS | 65 | 16.3 |
-| NEG | 19 | 4.8 |
-| NEU | 8 | 2.0 |
-| MAJ_POS | 3 | 0.8 |
-| DIV | 2 | 0.5 |
-| MAJ_NEG | 1 | 0.3 |
-| NM | 300 | 75.4 |
+| POS | 156 | 15.6 |
+| NEG | 29 | 2.9 |
+| NEU | 12 | 1.2 |
+| MAJ_POS | 6 | 0.6 |
+| DIV | 5 | 0.5 |
+| MAJ_NEG | 2 | 0.2 |
+| NM | 788 | 79.0 |
 
 ### Estética
 
 | Classe | n | % |
 |---|---:|---:|
-| POS | 113 | 28.4 |
-| NEG | 23 | 5.8 |
-| NEU | 10 | 2.5 |
-| MAJ_POS | 6 | 1.5 |
-| DIV | 2 | 0.5 |
-| MAJ_NEG | 2 | 0.5 |
-| NM | 242 | 60.8 |
+| POS | 261 | 26.2 |
+| NEG | 36 | 3.6 |
+| NEU | 12 | 1.2 |
+| MAJ_POS | 11 | 1.1 |
+| DIV | 5 | 0.5 |
+| MAJ_NEG | 3 | 0.3 |
+| NM | 670 | 67.1 |
 
 ### Tecnologia
 
 | Classe | n | % |
 |---|---:|---:|
-| POS | 16 | 4.0 |
-| NEG | 55 | 13.8 |
-| NEU | 7 | 1.8 |
+| POS | 30 | 3.0 |
+| NEG | 125 | 12.5 |
+| NEU | 10 | 1.0 |
 | MAJ_POS | 0 | 0.0 |
-| DIV | 3 | 0.8 |
+| DIV | 6 | 0.6 |
 | MAJ_NEG | 0 | 0.0 |
-| NM | 317 | 79.6 |
+| NM | 827 | 82.9 |
 
-**Classes com menos de 30 exemplos:** Mecânica/NEU (11), Mecânica/MAJ_POS (25), Mecânica/MAJ_NEG (17), Narrativa/NEG (19), Narrativa/NEU (8), Narrativa/MAJ_POS (3), Narrativa/DIV (2), Narrativa/MAJ_NEG (1), Estética/NEG (23), Estética/NEU (10), Estética/MAJ_POS (6), Estética/DIV (2), Estética/MAJ_NEG (2), Tecnologia/POS (16), Tecnologia/NEU (7), Tecnologia/DIV (3)
+**Classes com menos de 30 exemplos:** Mecânica/NEU (25), Narrativa/NEG (29), Narrativa/NEU (12), Narrativa/MAJ_POS (6), Narrativa/DIV (5), Narrativa/MAJ_NEG (2), Estética/NEU (12), Estética/MAJ_POS (11), Estética/DIV (5), Estética/MAJ_NEG (3), Tecnologia/NEU (10), Tecnologia/DIV (6)
 
 **Classes ausentes:** Tecnologia/MAJ_POS, Tecnologia/MAJ_NEG
 
 ## Tamanho do texto (palavras)
 
-- média 84.1, mediana 38.0, p90 220.2, p99 556.1
-- < 20 palavras: 116
-- > 200 palavras: 44
+- média 78.8, mediana 35.0, p90 192.0, p99 633.5
+- < 20 palavras: 315
+- > 200 palavras: 96
 
 ## Quatro eixos = Não mencionado
 
-- 92 reviews (23.1%)
+- 251 reviews (25.2%)
 
 ## Split por jogo
 
-- semente escolhida: 26 (menor desvio de distribuição)
-- train 316 / val 0 / test 82 reviews
-- jogos train/val/test: 17 / 0 / 4
+- semente escolhida: 24 (menor desvio de distribuição)
+- train 797 / val 0 / test 201 reviews
+- jogos train/val/test: 45 / 0 / 10
