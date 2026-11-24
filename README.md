@@ -1,5 +1,7 @@
 # Pixel Oracle API
 
+[![CI](https://github.com/Pixel-Oracle-TCC/PixelOracle-back-end/actions/workflows/ci.yml/badge.svg)](https://github.com/Pixel-Oracle-TCC/PixelOracle-back-end/actions/workflows/ci.yml)
+
 Monorepo do **Pixel Oracle** (TCC): mentoria pré-lançamento para desenvolvedores indie.
 
 O desenvolvedor descreve o jogo (título, ideia, gêneros) e recebe um **dashboard de evidências
@@ -25,7 +27,9 @@ reais**, extraídas de reviews públicas da Steam de jogos parecidos com o dele:
 Conformidade: **nenhum dado de autor** é guardado (sem `steamid`, sem perfil). Dedup por
 `recommendationid`. Temas são agregados por gênero/jogo, nunca por pessoa (ToS Steam cláusula 2 + LGPD).
 
-Documentação de produto/arquitetura: vault Obsidian `TCC/` · contratos: [`CONTRATOS_API.md`](CONTRATOS_API.md) · Docker: [`DOCKER.md`](DOCKER.md).
+Documentação de produto/arquitetura: vault Obsidian `TCC/` · contratos: [`CONTRATOS_API.md`](CONTRATOS_API.md) · Docker: [`DOCKER.md`](DOCKER.md) · entrega: [`docs/ci-cd.md`](docs/ci-cd.md) · histórico: [`CHANGELOG.md`](CHANGELOG.md).
+
+Mudança na coleta que entra em `develop` dispara o workflow **Entrega da coleta**: empacota a imagem sem Torch e publica esse código na EC2. O botão Run workflow, no Actions, coleta um lote na hora. A Gemini fica no notebook.
 
 ---
 

@@ -1,0 +1,42 @@
+{
+  "treinou": false,
+  "modelos_planejados": [
+    "BERTimbau base",
+    "XLM-RoBERTa base"
+  ],
+  "sementes_planejadas": [
+    13,
+    42,
+    2024
+  ],
+  "hiperparametros_planejados": {
+    "otimizador": "AdamW",
+    "taxa_de_aprendizado": 2e-05,
+    "batch": 16,
+    "epocas_maximas": 10,
+    "paciencia": 3,
+    "tokens_maximos": 256,
+    "cabecas": 4,
+    "perda": "ponderada por classe"
+  },
+  "pedido_explicito": false,
+  "planilha_presente": false,
+  "motivo": "Esta etapa não treina transformer. Falta a planilha humana de cerca de 500 reviews, falta GPU reservada, e baixar BERTimbau agora não responde a pergunta da prova. O comando futuro é TETRADE_TREINAR=1, com as dependências de poc/tetrade/requirements-treino.txt, e mesmo assim o teste humano só entra uma vez, no fim.",
+  "criterios_fixados_antes": {
+    "kappa_medio_entre_anotadores_minimo": 0.6,
+    "macro_f1_medio_minimo": 0.6,
+    "eixos_que_precisam_passar_do_piso": [
+      "mecanica",
+      "estetica"
+    ],
+    "transformer_precisa_superar": "tfidf_regressao_logistica",
+    "minimo_de_exemplos_para_concluir_sobre_uma_classe": 30,
+    "teste_humano_reviews": [
+      100,
+      150
+    ],
+    "declaracao": "Estes limites são a proposta do documento da Tétrade. Esta rodada não declara go, go com ajustes nem no-go de modelo, porque não há dois anotadores nem treino de transformer."
+  },
+  "decisao": "sem go",
+  "o_que_isto_nao_e": "Não é uma comparação entre BERTimbau e TF-IDF."
+}

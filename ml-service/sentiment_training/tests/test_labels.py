@@ -7,7 +7,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from data import InvalidLabelError, normalize_label_token  # noqa: E402
+from data import InvalidLabelError, clean_review_text, normalize_label_token  # noqa: E402
 
 
 def test_aliases() -> None:
@@ -35,7 +35,15 @@ def test_invalid_does_not_guess() -> None:
         raise AssertionError("deveria recusar valor fora do mapa")
 
 
+def test_clean_review_text() -> None:
+    assert clean_review_text(None) == ""
+    assert clean_review_text(float("nan")) == ""
+    assert clean_review_text("  Ótimo\x00jogo \n ver https://steam.com/x  ") == "Ótimo jogo ver"
+    assert clean_review_text("<b>legal</b>") == "legal"
+
+
 if __name__ == "__main__":
     test_aliases()
     test_invalid_does_not_guess()
+    test_clean_review_text()
     print("ok test_labels")

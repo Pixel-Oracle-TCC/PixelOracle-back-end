@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Provas de conceito da Tétrade Elemental</title>
+<style>
+  @page { size: A4; margin: 16mm 15mm 16mm; }
+  body { font-family: Palatino, "Palatino Linotype", Georgia, serif; color: #1c1917; font-size: 11pt; line-height: 1.45; margin: 0; }
+  h1 { font-family: "Avenir Next", "Segoe UI", sans-serif; color: #1B4332; font-size: 22pt; line-height: 1.15; margin: 0 0 8px; }
+  h2 { font-family: "Avenir Next", "Segoe UI", sans-serif; color: #1B4332; font-size: 14pt; border-bottom: 1.5px solid #1B4332; padding-bottom: 3px; margin: 18px 0 8px; page-break-after: avoid; }
+  .kicker { font-family: "Avenir Next", "Segoe UI", sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: #5A189A; font-size: 8.5pt; margin: 0 0 8px; }
+  .faixa { border-top: 8px solid #1B4332; padding-top: 16px; }
+  p { margin: 0 0 8px; }
+  ul { margin: 0 0 10px; padding-left: 18px; }
+  li { margin-bottom: 3px; }
+  table { width: 100%; border-collapse: collapse; font-size: 9.5pt; margin: 8px 0 12px; page-break-inside: avoid; }
+  th { background: #1B4332; color: white; text-align: left; padding: 5px 6px; font-family: "Avenir Next", "Segoe UI", sans-serif; }
+  td { border-bottom: 1px solid #e7e5e4; padding: 4px 6px; vertical-align: top; }
+  tr:nth-child(even) td { background: #f7f6f3; }
+  td.num, th.num { text-align: right; }
+  .nota { border-left: 3px solid #5A189A; background: #faf8fc; padding: 8px 12px; margin: 8px 0 12px; page-break-inside: avoid; }
+  figure { margin: 8px 0 12px; page-break-inside: avoid; }
+  img { width: 100%; height: auto; }
+  figcaption { font-size: 9pt; color: #57534e; margin-top: 4px; }
+  code { font-family: Menlo, monospace; font-size: 0.88em; }
+</style>
+</head>
+<body>
+<header class="faixa">
+  <p class="kicker">Trabalho de conclusão · documento para o orientador</p>
+  <h1>Provas de conceito da Tétrade Elemental</h1>
+  <p>O que foi testado, por que cada prova existe e o que o número desta execução permite afirmar. 3 de novembro de 2026. Nenhuma chamada à Gemini e nenhum treino de modelo de língua.</p>
+</header>
+
+<h2>1. Para que servem</h2>
+<p>O Pixel Oracle lê reviews de jogos parecidos com um pitch e mostra o que os jogadores elogiam e criticam. Não prevê venda. Esta rodada faz outra medida, mais estreita: a review inteira recebe um rótulo em cada eixo da Tétrade Elemental de Jesse Schell. Eixo, aqui, é a parte do jogo de que o texto fala.</p>
+<ul>
+  <li><strong>Mecânica.</strong> O que se faz e como o sistema responde: combate, dificuldade, duração.</li>
+  <li><strong>Narrativa.</strong> História, personagens, diálogos.</li>
+  <li><strong>Estética.</strong> O que se vê e se ouve: gráfico, trilha, dublagem.</li>
+  <li><strong>Tecnologia.</strong> Se o programa funciona: crash, travamento, save perdido, lag.</li>
+</ul>
+<p>Preço, estúdio, comunidade e “ótimo jogo” sem alvo não entram em eixo nenhum. O rótulo não é uma nota. Sai da contagem de pedaços citados: só elogios é Positivo, só críticas é Negativo, falou sem julgar é Neutro, elogio e crítica no mesmo eixo é Misto, não falou é Não mencionado. Os três mistos (mais elogios, empate, mais críticas) viram uma classe só nesta prova, porque com poucos exemplos eles ficam instáveis. A contagem continua guardada, então a separação pode voltar sem reanotar.</p>
+
+<table>
+  <tr><th>Prova</th><th>Pergunta</th><th>Nesta execução</th></tr>
+  <tr><td>1. Amostra</td><td>O texto entra sem autor e sem repetir?</td><td>5.027 reviews, 205 jogos, zero colunas de autor.</td></tr>
+  <tr><td>2. Rótulo</td><td>A conta do manual reproduz os exemplos?</td><td>13 exemplos, nenhuma falha.</td></tr>
+  <tr><td>3. Divisão</td><td>O teste vê jogo do treino?</td><td>Não. 117 reviews em 8 jogos ficam de fora.</td></tr>
+  <tr><td>4. Piso</td><td>O que se acerta sem rede neural?</td><td>Não medido. Não há planilha de pessoas.</td></tr>
+  <tr><td>5. Modelo de língua</td><td>BERTimbau ou XLM-RoBERTa passam do piso?</td><td>Não treinados. Protocolo escrito, download não feito.</td></tr>
+  <tr><td>6. Erro</td><td>Onde a previsão se confunde?</td><td>Sem previsão, sem matriz.</td></tr>
+  <tr><td>7. Ironia</td><td>Sarcasmo e texto curto distorcem o número?</td><td>Sem a flag IRONIA, sem taxa de erro.</td></tr>
+</table>
+
+<h2>2. De onde vêm os dados</h2>
+<p>O banco é o PostgreSQL do Pixel Oracle, montado a partir da Steam e depois exportado para o grupo não precisar chamar a loja de novo. Os jogos entram pelo ranking oficial de mais vendidos do Brasil: o coletor soma 52 semanas, grava o jogo pelo <code>steam_appid</code> e deixa software e DLC numa lista à parte. Em seguida, o endpoint <code>appdetails</code> completa data de lançamento, categorias, estúdios e idiomas. Nada disso é página HTML raspada. São respostas JSON da API da loja.</p>
+<p>As reviews vêm do endpoint oficial <code>IUserReviewsService/GetAppReviews</code>, também em JSON. O coletor pede dois idiomas, <code>brazilian</code> e <code>english</code>. A fatia proporcional pede as reviews recentes, cerca de 50 por idioma: são as últimas semanas, não a vida inteira do jogo. A fatia de úteis pede 25 positivas e 25 negativas mais marcadas como úteis, para ter citação dos dois lados. Há uma pausa de 1,5 segundo entre chamadas. Se a review já existe, o registro é atualizado pela chave <code>recommendationid</code>, que é o identificador da review na Steam, não o da pessoa.</p>
+<p>Antes de gravar, o coletor joga fora <code>steamid</code>, nome de perfil e qualquer outro identificador de quem escreveu. O tempo de jogo na hora da review pode ficar, porque descreve a review, não a pessoa. O dump de 17 de outubro de 2026, restaurado nesta máquina, tem 210 jogos com a coleta já marcada e 25.940 reviews: 15.392 em inglês e 10.548 em português, de 207 jogos. A Tétrade lê só o português. Esta execução não chamou a Steam de novo e não gravou autor. O corte de 20 a 200 palavras, o descarte de texto repetido e o descarte de sequência quase sem letra são regras do manual de anotação, aplicadas em cima desse banco.</p>
+
+<h2>3. Como ler os termos</h2>
+<ul>
+  <li><strong>Aspecto.</strong> Um pedaço citado dentro do eixo, como combate ou trilha. Cada pedaço distinto conta uma vez. Neutro entra na lista, mas não pesa na disputa entre elogio e crítica.</li>
+  <li><strong>Macro-F1.</strong> Nota de acerto que tira a média do F1 de cada classe, sem deixar a classe enorme dominar. F1 de uma classe equilibra duas coisas: das vezes que o modelo disse aquela classe, quantas estavam certas (precisão), e dos casos reais daquela classe, quantos ele achou (recall). Acurácia não serve de número principal, porque “Não mencionado” deve ser a maioria.</li>
+  <li><strong>Kappa de Cohen.</strong> Concordância entre duas pessoas além do que elas acertariam juntas por acaso. O limite para seguir, escrito antes de ver resultado, é 0,6 na média dos eixos. Ainda não há segunda pessoa.</li>
+  <li><strong>Classe majoritária.</strong> O piso burro: sempre responder a classe mais comum do treino. Se um modelo não ganha dele, só aprendeu a distribuição, não a review.</li>
+  <li><strong>TF-IDF.</strong> O piso que olha o texto. Conta as palavras e dá mais peso às que são raras no conjunto. Uma regressão logística, um modelo linear clássico, usa esses pesos para escolher a classe. Não é rede neural. O único ajuste, o parâmetro C, é escolhido dentro do treino, separando por jogo.</li>
+  <li><strong>BERTimbau.</strong> Modelo de língua já treinado em português. Lê a frase inteira, não só o saco de palavras. É o candidato principal, e não foi treinado aqui.</li>
+  <li><strong>XLM-RoBERTa.</strong> O mesmo tipo de modelo, treinado em vários idiomas. Entra como contraponto ao BERTimbau, com o mesmo protocolo, também sem treino nesta rodada.</li>
+  <li><strong>Bootstrap por jogo.</strong> Repete a conta reamostrando jogos, não reviews soltas, para ver se a diferença entre dois modelos aguenta sair um jogo e entrar outro. Se o intervalo da diferença passa pelo zero, não se afirma que um ganhou.</li>
+</ul>
+<div class="nota">Os limites para ampliar a anotação já estão em <code>ml-service/tetrade/criterios.py</code>: Kappa médio de pelo menos 0,6, macro-F1 médio de pelo menos 0,60, e o modelo de língua acima do TF-IDF, pelo menos em Mecânica e Estética. Esta rodada não marca passou nem não passou.</div>
+
+<h2>4. Amostra sem autor e sem texto repetido</h2>
+<p><strong>Por que esta prova existe.</strong> O classificador só pode ser treinado em texto que a Steam e a LGPD permitem guardar, e em texto que conta uma vez. Se a mesma frase aparece em dois jogos, ela pode cair no treino e no teste ao mesmo tempo, e o acerto sobe sem o modelo ter aprendido a tarefa. A prova confere as duas coisas no banco real, antes de qualquer rótulo.</p>
+<p><strong>O que foi feito.</strong> O script leu as 10.548 reviews em português, listou as colunas da tabela <code>reviews</code> e procurou nome de autor, <code>steamid</code> ou perfil. Depois aplicou o filtro do manual: tirou texto quase sem letra, ficou com uma cópia por jogo e uma cópia entre jogos, e manteve só reviews de 20 a 200 palavras. A lista que segue adiante guarda o identificador interno da review e do jogo, o título e a contagem de palavras. O texto da review não é copiado para o CSV da amostra.</p>
+<table>
+  <tr><th>Passo</th><th class="num">Reviews</th></tr>
+  <tr><td>Em português, como estavam no banco</td><td class="num">10.548</td></tr>
+  <tr><td>Colunas de autor</td><td class="num">0</td></tr>
+  <tr><td>Quase sem letra</td><td class="num">4</td></tr>
+  <tr><td>Repetidas no mesmo jogo / cópia em outro jogo</td><td class="num">2 / 32</td></tr>
+  <tr><td>Abaixo de 20 palavras</td><td class="num">4.596</td></tr>
+  <tr><td>Acima de 200 palavras</td><td class="num">887</td></tr>
+  <tr><td>Amostra</td><td class="num">5.027, em 205 jogos</td></tr>
+</table>
+<figure>
+  <img src="../01-dados/output/amostra.png" alt="Barras do que ficou e do que saiu da amostra">
+  <figcaption>Figura 1. Destino das 10.548 reviews em português. A barra verde escura é a amostra usada nas provas seguintes.</figcaption>
+</figure>
+<p>Das 5.027, 2.128 têm entre 20 e 40 palavras. O número descreve o corpus que um anotador vai encontrar: muita review curta, ainda dentro da faixa. Não é taxa de erro de modelo. O corte de tamanho vale para a anotação da Tétrade. O coletor de produção continua gravando a review curta e a longa.</p>
+<p><strong>O que o número permite afirmar.</strong> Dá para montar o corpus em português sem coluna de autor e sem texto repetido. Dois jogos saíram porque, depois do filtro, não restou review neles.</p>
+
+<h2>5. A conta do rótulo</h2>
+<p><strong>Por que esta prova existe.</strong> O rótulo da Tétrade é uma contagem, não uma impressão de quem lê. Se duas pessoas discordam, o primeiro suspeito é a regra, não o modelo. A função <code>rotulo_eixo</code> recebe a lista de sinais que a pessoa já marcou (<code>+</code> elogio, <code>-</code> crítica, <code>0</code> neutro) e devolve a classe. Lista vazia é Não mencionado. Só zeros é Neutro. Só elogios é Positivo. Só críticas é Negativo. Elogio e crítica no mesmo eixo é Misto, e o lado com mais sinais define se o misto pende para o elogio, para a crítica ou empata. Neutro entra na lista e não pesa nessa disputa. A função não lê a frase e não descobre ironia: isso já foi resolvido quando a pessoa montou a lista.</p>
+<p><strong>O que foi feito.</strong> Os 13 exemplos do manual de anotação foram colocados num arquivo, cada um com a lista de sinais por eixo e o rótulo que o manual espera. O script conferiu os sete nomes e, em seguida, o colapso para cinco classes, em que os três mistos viram um Misto só. Um caso mínimo: “o combate é divertido, mas a dificuldade é mal balanceada” tem um elogio e uma crítica em Mecânica, então é Misto de empate. No exemplo irônico “adoro perder o save”, o manual já trata a piada como crítica de Tecnologia e deixa Mecânica vazia. A função só confere essa lista.</p>
+<p><strong>Resultado.</strong> 13 exemplos, nenhuma divergência. O que isso permite afirmar é que a regra escrita e o código fazem a mesma conta. Ainda não há duas pessoas anotando as mesmas reviews, então não há Kappa, e não há modelo lendo review sozinho.</p>
+
+<h2>6. O teste não vê o jogo do treino</h2>
+<p><strong>Por que esta prova existe.</strong> Reviews do mesmo jogo repetem vocabulário, personagem e reclamação. Se o sorteio for de review solta, o teste vaza o treino e o macro-F1 fica otimista. A unidade do sorteio é o jogo inteiro. A semente é 42, para a divisão ser a mesma amanhã. Jogo com mais reviews do que cabem no teste não pode ser o teste: senão um único título grande ocuparia a medida final.</p>
+<p><strong>O que foi feito.</strong> Os jogos menores foram embaralhados e empilhados até o teste ficar entre 100 e 150 reviews. O restante, mais os jogos grandes, foi dividido em validação (cerca de 20%) e treino. A segunda execução leu o arquivo salvo em vez de sortear de novo. O script também normalizou o texto e conferiu se a mesma frase aparecia em dois conjuntos.</p>
+<table>
+  <tr><th>Conjunto</th><th class="num">Reviews</th><th class="num">Jogos</th><th>Papel</th></tr>
+  <tr><td>Treino</td><td class="num">4.032</td><td class="num">158</td><td>Onde o modelo aprende, quando houver rótulo</td></tr>
+  <tr><td>Validação</td><td class="num">878</td><td class="num">39</td><td>Onde o piso é medido, uma vez</td></tr>
+  <tr><td>Teste</td><td class="num">117</td><td class="num">8</td><td>Fechado. Ainda sem anotação de duas pessoas</td></tr>
+</table>
+<figure>
+  <img src="../03-divisao-por-jogo/output/divisao.png" alt="Barras de reviews em treino, validação e teste">
+  <figcaption>Figura 2. O teste é pequeno de propósito: são jogos que o treino não vê, guardados para a medida final.</figcaption>
+</figure>
+<p><strong>O que o número permite afirmar.</strong> O teste desta divisão tem 117 reviews em 8 jogos que o treino não vê, e nenhum texto normalizado atravessa a fronteira. Essas 117 reviews ficam fechadas até a anotação humana do fim. Estar reservado ainda não é concordância entre anotadores.</p>
+
+<h2>7. O piso, para quando houver rótulo</h2>
+<p><strong>Por que esta prova existe.</strong> Um modelo de língua grande só vale a pena se ganhar de algo simples. O piso são dois comparativos, os dois sem rede neural. A classe majoritária ignora o texto e responde sempre a classe mais comum do treino. O TF-IDF com regressão logística olha as palavras. Há um modelo por eixo, nas cinco classes. O único ajuste, o C, é escolhido por validação cruzada dentro dos jogos de treino, para a review do mesmo jogo não vazar entre as dobras. O número que será publicado é o da validação. As 117 reviews de teste ficam de fora dessa conta.</p>
+<p><strong>O que foi feito nesta execução.</strong> O script procurou <code>poc/tetrade/dados/rotulos.csv</code>, a planilha em que uma pessoa escreve o rótulo de cada eixo e o próprio nome na coluna do anotador. O arquivo não existe. O script registrou o motivo e parou. Não há macro-F1, e zero seria um número falso. A decisão registrada é “sem go”: os limites de 0,60 já estão escritos, e esta rodada não os aplica a um resultado inventado.</p>
+
+<h2>8. O modelo de língua, o erro e a ironia</h2>
+<p><strong>Por que estas provas existem.</strong> BERTimbau é o candidato principal porque já leu muito texto em português e usa a frase inteira, não só a lista de palavras do TF-IDF. XLM-RoBERTa entra como contraponto, treinado em vários idiomas, com o mesmo desenho: um encoder compartilhado e quatro saídas, uma por eixo. Três sementes (13, 42 e 2024) existem porque, com poucas reviews rotuladas, o número muda de uma execução para outra. O treino usa AdamW, taxa 0,00002, lotes de 16, no máximo 10 passagens, parada se três passagens seguidas não melhorarem, e no máximo 256 tokens. A comparação com o TF-IDF usa o bootstrap por jogo. Se o intervalo da diferença passar pelo zero, o documento não declara um vencedor.</p>
+<p><strong>O que foi feito nesta execução.</strong> O protocolo está no script e os hiperparâmetros foram registrados. O treino não rodou. Falta a planilha humana e falta GPU, e baixar o modelo sem rótulo não responde se ele ganha do TF-IDF. As bibliotecas de treino não foram instaladas. A prova do erro, que desenha uma matriz por eixo com o rótulo humano na linha e a previsão na coluna, também parou: sem previsão, não há matriz. Classe com menos de 30 exemplos, quando a matriz existir, aparece na tabela e não sustenta conclusão.</p>
+<p><strong>Ironia.</strong> “Adoro perder o save” é crítica de Tecnologia, não elogio de Mecânica. Um modelo de saco de palavras tende a ler “adoro” como Positivo. A prova guarda um lugar para a flag IRONIA na planilha, para medir esse erro à parte quando houver rótulo. Nesta execução a coluna não existe, então não há taxa. O que existe é o exemplo 4 do manual, já conferido na prova do rótulo, para a regra não se perder.</p>
+
+<h2>9. O que esta rodada mostra e o que ainda falta</h2>
+<p>As três primeiras provas fecham a base em que um classificador pode ser medido com honestidade. A amostra em português existe, sai da Steam pelo caminho oficial, não carrega autor e não repete texto. A regra do manual e o código dão o mesmo rótulo nos 13 exemplos. O teste é um conjunto de jogos que o treino não vê, no tamanho pedido para o teste humano.</p>
+<p>As quatro provas seguintes existem para a medida do classificador, e nesta execução elas documentam o protocolo em vez de publicar acerto. Publicar um F1 agora seria tratar ausência de rótulo como fracasso do modelo. O que falta, em ordem:</p>
+<ul>
+  <li><strong>Concordância.</strong> Duas pessoas anotam as mesmas reviews, cerca de 100 no piloto. O Kappa médio dos eixos precisa chegar a 0,6. Abaixo disso, o manual é revisado antes de anotar em volume. A prova 2 só mostra que a conta está implementada.</li>
+  <li><strong>Piso.</strong> Cerca de 500 reviews vão para <code>rotulos.csv</code>, com a coluna de quem anotou. Aí o TF-IDF e a classe majoritária ganham um macro-F1 na validação. O teste de 117 reviews continua só humano e só no fim.</li>
+  <li><strong>Modelo de língua.</strong> Com a planilha e com GPU, BERTimbau e XLM-RoBERTa treinam nas três sementes. Ganhar do TF-IDF exige que o intervalo por jogo da diferença fique acima de zero. Enquanto isso, o script recusa o download.</li>
+</ul>
+<p>Os limites já estão em <code>ml-service/tetrade/criterios.py</code>, escritos antes de qualquer treino: Kappa médio de pelo menos 0,6, macro-F1 médio de pelo menos 0,60, e o modelo de língua acima do TF-IDF em Mecânica e em Estética. Esta rodada não marca passou nem não passou.</p>
+<p>Para repetir o que já roda, sem anotar e sem treinar: <code>./poc/tetrade/run_all.sh</code>. Cada prova deixa o JSON em <code>output/resultado.json</code>.</p>
+</body>
+</html>

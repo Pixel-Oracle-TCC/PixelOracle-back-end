@@ -75,6 +75,14 @@ def binary_pos_weight(y: Sequence[int]) -> torch.Tensor:
     return torch.tensor([neg / pos], dtype=torch.float32)
 
 
+def _model_max_positions(tokenizer) -> int:
+    cap = int(getattr(tokenizer, "model_max_length", 512) or 512)
+    # Alguns tokenizers expõem sys.maxsize; BERT/XLM-R reais cabem em 512.
+    if cap > 10_000:
+        return 512
+    return max(cap, 8)
+
+
 def encode_head_tail(
     tokenizer,
     text: str,
@@ -83,12 +91,30 @@ def encode_head_tail(
     head_tokens: int = HEAD_TOKENS,
     tail_tokens: int = TAIL_TOKENS,
 ) -> Dict[str, List[int]]:
-    """Mantém cabeça + cauda quando o texto passa de max_length."""
-    ids = tokenizer.encode(text, add_special_tokens=False, truncation=False)
+    """Mantém cabeça + cauda quando o texto passa de max_length.
+
+    O aviso ``630 > 512`` vinha do ``encode(..., truncation=False)`` no texto
+    inteiro. O tensor que entra no encoder já era cortado; agora o corte
+    acontece antes do warning do Hugging Face.
+    """
+    max_length = min(int(max_length), _model_max_positions(tokenizer))
     special = tokenizer.num_special_tokens_to_add(pair=False)
-    budget = max_length - special
+    budget = max(1, max_length - special)
+    head = min(int(head_tokens), budget)
+    tail = min(int(tail_tokens), max(0, budget - head))
+
+    # encode sem truncar para poder pegar cabeça+cauda; sobe o cap só para
+    # não disparar "630 > 512" no texto cru (o encoder só vê `max_length`).
+    prev_cap = tokenizer.model_max_length
+    tokenizer.model_max_length = int(1e12)
+    try:
+        ids = tokenizer.encode(text, add_special_tokens=False, truncation=False)
+    finally:
+        tokenizer.model_max_length = prev_cap
     if len(ids) > budget:
-        ids = ids[:head_tokens] + ids[-tail_tokens:]
+        ids = ids[:head] + ids[len(ids) - tail :] if tail else ids[:head]
+    if len(ids) > budget:
+        ids = ids[:budget]
     wrapped = tokenizer.prepare_for_model(
         ids,
         max_length=max_length,
@@ -280,7 +306,13 @@ def train_transformer(
     model = MultiHeadSentiment(model_name, n_labels=max(n_out, 2), scheme=scheme).to(device)
 
     max_length = 64 if smoke else MAX_LENGTH
-    batch_size = 2 if smoke else BATCH_SIZE
+    if smoke:
+        batch_size = 2
+    elif device.type != "cuda":
+        batch_size = min(4, BATCH_SIZE)
+        logger.warning("CPU: batch=%s, max_length=%s", batch_size, max_length)
+    else:
+        batch_size = BATCH_SIZE
     train_ds = ReviewDataset(
         train, tokenizer, scheme=scheme, label_to_id=label_to_id, max_length=max_length
     )

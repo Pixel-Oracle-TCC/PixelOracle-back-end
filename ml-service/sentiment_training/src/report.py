@@ -114,6 +114,14 @@ def write_results_table(
     OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
     frame = pd.DataFrame(rows)
     csv_path = OUTPUTS_DIR / "resultados.csv"
+    if csv_path.is_file() and not frame.empty:
+        previous = pd.read_csv(csv_path, sep=";")
+        keys = ["modelo", "esquema", "semente"]
+        if set(keys).issubset(previous.columns) and set(keys).issubset(frame.columns):
+            previous["_k"] = previous[keys].astype(str).agg("|".join, axis=1)
+            frame["_k"] = frame[keys].astype(str).agg("|".join, axis=1)
+            previous = previous.loc[~previous["_k"].isin(set(frame["_k"]))]
+            frame = pd.concat([previous.drop(columns=["_k"], errors="ignore"), frame.drop(columns=["_k"])], ignore_index=True)
     frame.to_csv(csv_path, index=False, sep=";", encoding="utf-8-sig")
 
     md: List[str] = [

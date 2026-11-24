@@ -1,0 +1,7 @@
+{
+  "analisou_modelo": false,
+  "motivo": "Não há coluna de flag na planilha, porque a planilha ainda não existe. Separar ironia e texto curto fica para quando os anotadores marcarem IRONIA.",
+  "reviews_de_20_a_40_palavras_na_amostra": 2128,
+  "o_que_esse_numero_nao_e": "Não é taxa de erro do modelo. É só o tamanho dos textos já filtrados.",
+  "decisao": "sem go"
+}

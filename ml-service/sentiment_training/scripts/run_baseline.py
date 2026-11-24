@@ -11,7 +11,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from config import DEFAULT_SHEET, MIN_LABELED_WARN, OUTPUTS_DIR, SEEDS  # noqa: E402
+import joblib  # noqa: E402
+
+from config import CHECKPOINTS_DIR, DEFAULT_SHEET, MIN_LABELED_WARN, OUTPUTS_DIR, SEEDS  # noqa: E402
 from baseline import evaluate_baseline, predict_baseline, train_baseline  # noqa: E402
 from data import (  # noqa: E402
     InvalidLabelError,
@@ -93,7 +95,12 @@ def main() -> int:
         preds = predict_baseline(bundle, models, test, scheme=args.scheme)
         write_predictions(test, preds, model="baseline", scheme=args.scheme, seed=seed)
         append_result_row(rows, model="baseline", scheme=args.scheme, seed=seed, summary=summary)
-        notes.append(f"baseline seed {seed} media_macro_f1={summary['_mean']['macro_f1']:.4f}")
+        ckpt = CHECKPOINTS_DIR / f"baseline_{args.scheme}_seed{seed}.joblib"
+        CHECKPOINTS_DIR.mkdir(parents=True, exist_ok=True)
+        joblib.dump({"bundle": bundle, "models": models, "scheme": args.scheme}, ckpt)
+        notes.append(
+            f"baseline seed {seed} media_macro_f1={summary['_mean']['macro_f1']:.4f} ckpt={ckpt}"
+        )
 
     write_results_table(rows, versions=library_versions(), data_hash=digest, notes=notes)
     return 0

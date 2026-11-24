@@ -1,0 +1,5 @@
+title = "Pixel Oracle"
+
+[allowlist]
+description = "A chave da Gemini entrou em api/.env.example nesse commit e depois foi apagada do arquivo. O commit segue no histórico."
+commits = ["65e1a10c125c1472dadadb7dc19be858486ff1a0"]

@@ -1,0 +1,149 @@
+name: Entrega da coleta
+
+# Push em develop publica só na EC2 de DEV (secret DEV_HOST).
+# PROD_HOST é uma trava: se os dois secrets forem o mesmo endereço, o job para
+# antes de copiar qualquer arquivo. A coleta longa fica na máquina de produção.
+
+run-name: ${{ github.event_name == 'workflow_dispatch' && format('Coleta manual de {0} jogos', inputs.jogos) || format('Publica a coleta de {0}', github.ref_name) }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      jogos:
+        description: Quantos jogos ainda sem review coletar agora
+        required: true
+        default: "1"
+  push:
+    branches: [develop]
+    paths:
+      - ml-service/collection/**
+      - ml-service/scripts/collect_*.py
+      - ml-service/scripts/enrich_games.py
+      - ml-service/scripts/bootstrap_games_from_json.py
+      - ml-service/db/**
+      - ml-service/models/**
+      - ml-service/Dockerfile.collect
+      - ml-service/requirements-collect.txt
+      - scripts/collect-steam.sh
+      - scripts/remote-publish.sh
+      - scripts/bootstrap-collect-host.sh
+      - docker-compose.collect.yml
+      - .github/workflows/deploy-coleta.yml
+
+concurrency:
+  group: entrega-coleta
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  empacota:
+    name: empacota
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Valida o compose
+        env:
+          POSTGRES_PASSWORD: demo
+        run: docker compose -f docker-compose.collect.yml --profile collect config >/dev/null
+
+      - name: Constrói a imagem da coleta
+        run: docker build -f ml-service/Dockerfile.collect ml-service
+
+      - name: Quadro
+        run: |
+          {
+            echo "## Empacota"
+            echo ""
+            echo "| Etapa | Resultado |"
+            echo "|-------|-----------|"
+            echo "| Compose da coleta | passou |"
+            echo "| Imagem sem Torch e sem Gemini | passou |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  publica:
+    name: publica
+    needs: empacota
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Confere a máquina
+        id: dest
+        env:
+          HOST: ${{ secrets.DEV_HOST }}
+        run: |
+          if [ -z "$HOST" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            {
+              echo "## Publica"
+              echo ""
+              echo "A imagem foi empacotada. Falta o secret \`DEV_HOST\` para enviar o código à EC2 de DEV."
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Envia a coleta e sobe o banco
+        if: steps.dest.outputs.ready == 'true'
+        env:
+          HOST: ${{ secrets.DEV_HOST }}
+          PROD_HOST: ${{ secrets.PROD_HOST }}
+          SSH_USER: ${{ secrets.DEV_USER }}
+          SSH_KEY: ${{ secrets.DEV_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEV_SSH_KNOWN_HOSTS }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          STEAM_API_KEY: ${{ secrets.STEAM_API_KEY }}
+          RUN_COLLECT: ${{ github.event_name == 'workflow_dispatch' && 'true' || 'false' }}
+          COLLECT_LIMIT: ${{ github.event_name == 'workflow_dispatch' && inputs.jogos || '400' }}
+        run: |
+          set -euo pipefail
+          if [ -n "${PROD_HOST:-}" ] && [ "$HOST" = "$PROD_HOST" ]; then
+            echo "Recusando: DEV_HOST é o endereço da produção. Este workflow não publica nela."
+            exit 1
+          fi
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_coleta
+          chmod 600 ~/.ssh/id_coleta
+          if [ -n "$KNOWN_HOSTS" ]; then
+            printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+            SSH_OPTS=(-o UserKnownHostsFile="$HOME/.ssh/known_hosts")
+          else
+            SSH_OPTS=(-o StrictHostKeyChecking=accept-new)
+          fi
+          RSH="ssh -i $HOME/.ssh/id_coleta -o IdentitiesOnly=yes ${SSH_OPTS[*]}"
+          SSH=(ssh -i "$HOME/.ssh/id_coleta" -o IdentitiesOnly=yes "${SSH_OPTS[@]}" "$SSH_USER@$HOST")
+          "${SSH[@]}" 'sudo mkdir -p /opt/pixel-oracle && sudo chown "$(id -un):$(id -gn)" /opt/pixel-oracle'
+          rsync -az --delete \
+            --exclude .git \
+            --exclude api/node_modules \
+            --exclude ml-service/.venv \
+            --exclude ml-service/.env \
+            --exclude api/.env \
+            --exclude .env \
+            -e "$RSH" \
+            ./ "$SSH_USER@$HOST:/opt/pixel-oracle/"
+          env_file="$(mktemp)"
+          chmod 600 "$env_file"
+          printf 'POSTGRES_PASSWORD=%s\nSTEAM_API_KEY=%s\n' "$POSTGRES_PASSWORD" "$STEAM_API_KEY" > "$env_file"
+          "${SSH[@]}" "umask 077; cat > /opt/pixel-oracle/.env" < "$env_file"
+          rm -f "$env_file"
+          "${SSH[@]}" "RUN_COLLECT=$(printf '%q' "$RUN_COLLECT") COLLECT_LIMIT=$(printf '%q' "$COLLECT_LIMIT") bash /opt/pixel-oracle/scripts/remote-publish.sh"
+
+      - name: Quadro
+        if: always() && steps.dest.outputs.ready == 'true'
+        run: |
+          {
+            echo "## Publica"
+            echo ""
+            echo "O código da coleta está na EC2 de DEV e o Postgres responde."
+            if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+              echo "O lote manual pedido foi ${{ inputs.jogos }} jogo(s)."
+            else
+              echo "Push em \`develop\`: só publicou. A coleta do dia sai pelo botão Run workflow."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

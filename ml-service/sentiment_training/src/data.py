@@ -6,6 +6,7 @@ import hashlib
 import json
 import logging
 import re
+import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
@@ -36,6 +37,24 @@ from config import (
 logger = logging.getLogger(__name__)
 
 _DASHES = ("−", "–", "—", "‑")
+_CTRL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]")
+_HTML = re.compile(r"<[^>]+>")
+_URL = re.compile(r"https?://\S+|www\.\S+", re.IGNORECASE)
+_ZW = re.compile(r"[\u200b-\u200d\ufeff]")
+_WS = re.compile(r"\s+")
+
+
+def clean_review_text(raw: Any) -> str:
+    """Nulos → vazio; tira controle, HTML, URL e espaços repetidos. Mantém pontuação do português."""
+    if raw is None or (isinstance(raw, float) and np.isnan(raw)):
+        return ""
+    text = unicodedata.normalize("NFC", str(raw))
+    text = _ZW.sub("", text)
+    text = _CTRL.sub(" ", text)
+    text = _HTML.sub(" ", text)
+    text = _URL.sub(" ", text)
+    text = text.replace("\xa0", " ")
+    return _WS.sub(" ", text).strip()
 
 
 class InvalidLabelError(ValueError):
@@ -186,15 +205,21 @@ def prepare_labeled(
     if ANNOTATOR_COL in labeled.columns and only_human:
         labeled = labeled.loc[~labeled[ANNOTATOR_COL].map(_is_claude)].copy()
 
-    word_counts = labeled[TEXT_COL].fillna("").astype(str).map(lambda t: len(t.split()))
+    labeled[TEXT_COL] = labeled[TEXT_COL].map(clean_review_text)
+    empty_text = labeled[TEXT_COL].eq("")
+    empty_n = int(empty_text.sum())
+    if empty_n:
+        logger.info("Descartando %s review(s) com texto nulo/vazio após limpeza", empty_n)
+        labeled = labeled.loc[~empty_text].copy()
+
+    word_counts = labeled[TEXT_COL].map(lambda t: len(t.split()))
     labeled = labeled.assign(_n_words=word_counts)
-    short = 0
+    short = empty_n
     if min_words > 0:
         keep = labeled["_n_words"] >= min_words
-        short = int((~keep).sum())
+        short += int((~keep).sum())
         labeled = labeled.loc[keep].copy()
 
-    labeled[TEXT_COL] = labeled[TEXT_COL].fillna("").astype(str)
     labeled[GAME_ID_COL] = labeled[GAME_ID_COL]
 
     annotator_counts: Dict[str, int] = {}
