@@ -18,7 +18,7 @@ export type GamesByGenre = {
 };
 
 export interface IDashboardRepository {
-  getOverview(): Promise<OverviewKpis>;
-  getReleasesByMonth(from: string, to: string): Promise<ReleasesByMonth[]>;
-  getGamesByGenre(): Promise<GamesByGenre[]>;
+  getOverview(genre: string | null): Promise<OverviewKpis>;
+  getReleasesByMonth(from: string, to: string, genre: string | null): Promise<ReleasesByMonth[]>;
+  getGamesByGenre(genre: string | null): Promise<GamesByGenre[]>;
 }

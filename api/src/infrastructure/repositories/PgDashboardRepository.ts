@@ -33,6 +33,16 @@ function asNumber(value: number | string | null | undefined, fallback = 0): numb
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function genreMatch(placeholder: string): string {
+  return `(${placeholder}::text IS NULL OR EXISTS (
+        SELECT 1
+        FROM game_genres gg
+        INNER JOIN genres gen ON gen.id = gg.genre_id
+        WHERE gg.game_id = g.id
+          AND gen.nome = ${placeholder}
+      ))`;
+}
+
 function asNullableNumber(value: number | string | null | undefined): number | null {
   if (value === null || value === undefined) {
     return null;
@@ -44,7 +54,8 @@ function asNullableNumber(value: number | string | null | undefined): number | n
 export class PgDashboardRepository implements IDashboardRepository {
   constructor(private readonly pool: Pool) {}
 
-  async getOverview(): Promise<OverviewKpis> {
+  async getOverview(genre: string | null): Promise<OverviewKpis> {
+    const match = genreMatch("$1");
     const result = await this.pool.query<OverviewRow>(
       `
       WITH catalog AS (
@@ -55,12 +66,14 @@ export class PgDashboardRepository implements IDashboardRepository {
             0
           ) AS pct_free
         FROM games g
+        WHERE ${match}
       ),
       median AS (
         SELECT
-          percentile_cont(0.5) WITHIN GROUP (ORDER BY lp.final_price)::float AS median_price
-        FROM latest_prices lp
-        WHERE lp.final_price > 0
+          percentile_cont(0.5) WITHIN GROUP (ORDER BY g.preco_brl)::float AS median_price
+        FROM games g
+        WHERE g.preco_brl > 0
+          AND ${match}
       ),
       sentiment AS (
         SELECT
@@ -68,6 +81,8 @@ export class PgDashboardRepository implements IDashboardRepository {
             100.0 * lr.total_positive / NULLIF(lr.total_positive + lr.total_negative, 0)
           )::float AS avg_positive_rate
         FROM latest_reviews lr
+        INNER JOIN games g ON g.id = lr.game_id
+        WHERE ${match}
       )
       SELECT
         catalog.total_games,
@@ -75,7 +90,8 @@ export class PgDashboardRepository implements IDashboardRepository {
         median.median_price,
         sentiment.avg_positive_rate
       FROM catalog, median, sentiment
-      `
+      `,
+      [genre]
     );
 
     const row = result.rows[0];
@@ -96,7 +112,11 @@ export class PgDashboardRepository implements IDashboardRepository {
     };
   }
 
-  async getReleasesByMonth(from: string, to: string): Promise<ReleasesByMonth[]> {
+  async getReleasesByMonth(
+    from: string,
+    to: string,
+    genre: string | null
+  ): Promise<ReleasesByMonth[]> {
     const result = await this.pool.query<ReleasesRow>(
       `
       SELECT
@@ -109,10 +129,11 @@ export class PgDashboardRepository implements IDashboardRepository {
       FROM games g
       WHERE g.release_date >= $1::date
         AND g.release_date <= $2::date
+        AND ${genreMatch("$3")}
       GROUP BY 1
       ORDER BY 1
       `,
-      [from, to]
+      [from, to, genre]
     );
 
     return result.rows.map((row) => ({
@@ -122,21 +143,28 @@ export class PgDashboardRepository implements IDashboardRepository {
     }));
   }
 
-  async getGamesByGenre(): Promise<GamesByGenre[]> {
+  async getGamesByGenre(genre: string | null): Promise<GamesByGenre[]> {
     const result = await this.pool.query<GenreRow>(
       `
+      WITH scoped AS (
+        SELECT g.id
+        FROM games g
+        WHERE ${genreMatch("$1")}
+      )
       SELECT
         gen.nome AS genre,
         COUNT(DISTINCT gg.game_id)::int AS games,
         COALESCE(
-          (100.0 * COUNT(DISTINCT gg.game_id) / NULLIF((SELECT COUNT(*) FROM games), 0))::float,
+          (100.0 * COUNT(DISTINCT gg.game_id) / NULLIF((SELECT COUNT(*) FROM scoped), 0))::float,
           0
         ) AS pct
       FROM genres gen
       INNER JOIN game_genres gg ON gg.genre_id = gen.id
+      INNER JOIN scoped s ON s.id = gg.game_id
       GROUP BY gen.id, gen.nome
       ORDER BY games DESC, gen.nome
-      `
+      `,
+      [genre]
     );
 
     return result.rows.map((row) => ({

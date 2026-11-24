@@ -25,12 +25,12 @@ function lastTwelveMonthsRange(): { from: string; to: string } {
 export class GetDashboardOverviewUseCase {
   constructor(private readonly dashboardRepository: IDashboardRepository) {}
 
-  async execute(): Promise<DashboardOverviewResult> {
+  async execute(genre: string | null = null): Promise<DashboardOverviewResult> {
     const { from, to } = lastTwelveMonthsRange();
     const [overview, releases, genres] = await Promise.all([
-      this.dashboardRepository.getOverview(),
-      this.dashboardRepository.getReleasesByMonth(from, to),
-      this.dashboardRepository.getGamesByGenre(),
+      this.dashboardRepository.getOverview(genre),
+      this.dashboardRepository.getReleasesByMonth(from, to, genre),
+      this.dashboardRepository.getGamesByGenre(genre),
     ]);
     return { overview, releases, genres };
   }

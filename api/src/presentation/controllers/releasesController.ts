@@ -1,22 +1,23 @@
 import type { Request, Response } from "express";
 import type { GetReleasesUseCase } from "../../application/use-cases/GetReleasesUseCase.js";
-import { parseReleasesQuery } from "../validation/releasesQuery.js";
+import { parseOptionalGenre, parseReleasesQuery } from "../validation/releasesQuery.js";
 
 export class ReleasesController {
   constructor(private readonly getReleases: GetReleasesUseCase) {}
 
   async handle(req: Request, res: Response): Promise<Response> {
     const parsed = parseReleasesQuery(req.query);
-    if (!parsed.success) {
+    const genre = parseOptionalGenre(req.query);
+    if (!parsed.success || !genre.success) {
       return res.status(400).json({
         status: "erro",
         mensagem: "Parâmetros de data inválidos.",
-        erros: parsed.erros,
+        erros: [...(parsed.success ? [] : parsed.erros), ...(genre.success ? [] : genre.erros)],
       });
     }
 
     try {
-      const data = await this.getReleases.execute(parsed.data.from, parsed.data.to);
+      const data = await this.getReleases.execute(parsed.data.from, parsed.data.to, genre.genre);
       return res.status(200).json({
         status: "sucesso",
         data,

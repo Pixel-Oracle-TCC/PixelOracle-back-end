@@ -37,6 +37,33 @@ export type ValidationIssue = {
   mensagem: string;
 };
 
+export function parseOptionalGenre(query: unknown):
+  | { success: true; genre: string | null }
+  | { success: false; erros: ValidationIssue[] } {
+  const raw =
+    query && typeof query === "object"
+      ? firstQueryValue((query as Record<string, unknown>).genre)
+      : undefined;
+
+  if (raw === undefined || raw === null || raw === "") {
+    return { success: true, genre: null };
+  }
+  if (typeof raw !== "string") {
+    return {
+      success: false,
+      erros: [{ campo: "genre", mensagem: "Informe o nome do gênero." }],
+    };
+  }
+  const genre = raw.trim();
+  if (!genre || genre.length > 80) {
+    return {
+      success: false,
+      erros: [{ campo: "genre", mensagem: "O gênero deve ter entre 1 e 80 caracteres." }],
+    };
+  }
+  return { success: true, genre };
+}
+
 function firstQueryValue(value: unknown): unknown {
   if (Array.isArray(value)) {
     return value[0];

@@ -6,7 +6,7 @@ import type {
 export class GetReleasesUseCase {
   constructor(private readonly dashboardRepository: IDashboardRepository) {}
 
-  execute(from: string, to: string): Promise<ReleasesByMonth[]> {
-    return this.dashboardRepository.getReleasesByMonth(from, to);
+  execute(from: string, to: string, genre: string | null = null): Promise<ReleasesByMonth[]> {
+    return this.dashboardRepository.getReleasesByMonth(from, to, genre);
   }
 }
