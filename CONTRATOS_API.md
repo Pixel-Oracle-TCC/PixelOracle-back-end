@@ -23,7 +23,7 @@ Sempre responde 200 (o healthcheck do Docker não pode cair por banco vazio).
   "status": "online",
   "modo": "pre-lancamento",
   "database_configured": true,
-  "endpoints": ["/", "/health", "/retrieve-similar", "/analyze"],
+  "endpoints": ["/", "/health", "/retrieve-similar", "/analyze", "/correlation-heatmap"],
   "database_ok": true,
   "contagens": {
     "games": 110, "reviews": 1200, "review_aspects": 2500,
@@ -33,6 +33,7 @@ Sempre responde 200 (o healthcheck do Docker não pode cair por banco vazio).
 ```
 
 ### Histórico de mudanças
+- 2026-11-02: `endpoints` passa a listar `/correlation-heatmap`.
 - 2026-10-14: removidos `model_loaded`, `features`, `include_review_features`, `mensagem`; adicionados `database_ok` e `contagens`.
 - 2026-09-10: endpoint `/health` explícito; campo `database_configured` adicionado.
 
@@ -214,3 +215,98 @@ Mesmo body de `/analyze`. Campos do formulário antigo (`categories`, `release_y
 ### Histórico de mudanças
 - 2026-10-14: `/api/report` chama `/analyze`; validador pós-Gemini de jogos citados.
 - 2026-09-10: `/api/report` chama `/triangulate`; Gemini só redige o dashboard.
+
+---
+
+## GET /kpis/dashboard (api principal, consumido por: frontend)
+
+Agregados do catálogo Steam no Postgres. Exige `DATABASE_URL`. Só dados de jogo (sem autor).
+
+`releases` cobre os últimos 12 meses (data de lançamento em `games.release_date`).
+`pctFree` usa `preco_brl = 0`. `medianPrice` ignora preço 0. `avgPositiveRate` usa o último `review_snapshots` por jogo.
+`genres` é a fatia do catálogo com cada gênero Steam (`games` ⋈ `game_genres` ⋈ `genres`). Um jogo pode ter vários gêneros, então a soma das `%` passa de 100.
+
+### Response
+```json
+{
+  "status": "sucesso",
+  "data": {
+    "overview": {
+      "totalGames": 110,
+      "pctFree": 12.5,
+      "medianPrice": 29.99,
+      "avgPositiveRate": 84.2
+    },
+    "releases": [
+      { "month": "2025-10", "releases": 4, "pctFree": 25.0 }
+    ],
+    "genres": [
+      { "genre": "Indie", "games": 80, "pct": 72.7 }
+    ]
+  }
+}
+```
+
+`medianPrice` e `avgPositiveRate` podem ser `null` se não houver preço pago ou snapshot de reviews.
+
+### Histórico de mudanças
+- 2026-10-20: `genres` adicionado à resposta (retrocompatível).
+- 2026-10-20: endpoint criado.
+
+---
+
+## GET /kpis/releases (api principal, consumido por: frontend)
+
+Série mensal de lançamentos. Query: `from` e `to` em `YYYY-MM-DD`, `from <= to`, intervalo máximo de 5 anos.
+
+### Request
+`GET /kpis/releases?from=2024-01-01&to=2024-12-31`
+
+### Response (200)
+```json
+{
+  "status": "sucesso",
+  "data": [
+    { "month": "2024-01", "releases": 8, "pctFree": 12.5 }
+  ]
+}
+```
+
+### Response (400)
+```json
+{
+  "status": "erro",
+  "mensagem": "Parâmetros de data inválidos.",
+  "erros": [{ "campo": "from", "mensagem": "Use o formato YYYY-MM-DD." }]
+}
+```
+
+### Histórico de mudanças
+- 2026-10-20: endpoint criado.
+
+---
+
+## GET /correlation-heatmap (ml-service, consumido por: api principal `/kpis/correlation-heatmap`)
+
+PNG em memória (sem arquivo em disco). Matriz de correlação de Pearson entre variáveis numéricas do catálogo: `positive_reviews`, `negative_reviews`, `genre_id`, `publisher_id`, `release_year`, `release_date` (dias desde 1970-01-01), `price` (`preco_brl`), `total_reviews` (`total_reviews_steam`) e `rank_popularidade`. Gênero e publicadora entram como ID; **todas** as IDs do jogo entram (produto cartesiano gênero × publicadora; preço/reviews se repetem). Sem one-hot, sem `game_id` e sem identificador de autor.
+
+### Response
+`Content-Type: image/png` — heatmap `coolwarm` (`vmin=-1`, `vmax=1`). Anotações `.2f` só se houver no máximo 18 variáveis.
+
+### Histórico de mudanças
+- 2026-11-02: todas as IDs de gênero e publicadora por jogo entram na matriz (não só um `MIN(id)`).
+- 2026-11-02: gênero passa a `genre_id`; entram `release_date`, `price`, `total_reviews`, `rank_popularidade`, `release_year`.
+- 2026-11-02: publicadora passa a entrar como `publisher_id` (não one-hot por nome).
+- 2026-11-02: endpoint criado.
+
+---
+
+## GET /kpis/correlation-heatmap (api principal, consumido por: frontend)
+
+Proxy do PNG gerado em `/correlation-heatmap` no ml-service.
+
+### Response
+`Content-Type: image/png`
+
+### Histórico de mudanças
+- 2026-11-02: endpoint criado.
